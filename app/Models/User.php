@@ -20,8 +20,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'code',
         'email',
         'password',
+        'role',
+        'department',
+        'status',
     ];
 
     /**
@@ -45,5 +49,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the subjects assigned to the teacher.
+     */
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class)->withTimestamps();
     }
 }
