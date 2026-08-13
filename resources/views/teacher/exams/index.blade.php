@@ -22,7 +22,16 @@
                         </div>
                     </div>
 
-                    <select name="subject_id" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
+                    <select name="class_id" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 max-w-xs" onchange="this.form.submit()">
+                        <option value="">-- Tất cả lớp --</option>
+                        @foreach($classes as $c)
+                            <option value="{{ $c->id }}" {{ request('class_id') == $c->id ? 'selected' : '' }}>
+                                {{ $c->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <select name="subject_id" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 max-w-xs" onchange="this.form.submit()">
                         <option value="">-- Tất cả môn học --</option>
                         @foreach($subjects as $subject)
                             <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
@@ -33,10 +42,8 @@
 
                     <select name="status" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
                         <option value="">-- Tất cả trạng thái --</option>
-                        <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Bản nháp</option>
-                        <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Đã xuất bản</option>
-                        <option value="ongoing" {{ request('status') === 'ongoing' ? 'selected' : '' }}>Đang diễn ra</option>
-                        <option value="closed" {{ request('status') === 'closed' ? 'selected' : '' }}>Đã đóng</option>
+                        <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Mở</option>
+                        <option value="closed" {{ request('status') === 'closed' ? 'selected' : '' }}>Đóng</option>
                     </select>
                 </form>
                 
@@ -79,7 +86,7 @@
                                 <p class="text-sm text-gray-700 font-medium">{{ $exam->total_questions }} câu hỏi</p>
                                 <p class="text-xs text-gray-500 mt-1">Làm bài: <span class="font-medium text-blue-600">{{ $exam->duration_minutes }} phút</span></p>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 ">
                                 @if($exam->start_at || $exam->end_at)
                                     <p class="text-xs text-gray-600"><span class="font-medium text-emerald-600">Mở:</span> {{ $exam->start_at ? $exam->start_at->format('d/m/Y H:i') : 'Không giới hạn' }}</p>
                                     <p class="text-xs text-gray-600 mt-1"><span class="font-medium text-rose-600">Đóng:</span> {{ $exam->end_at ? $exam->end_at->format('d/m/Y H:i') : 'Không giới hạn' }}</p>
@@ -87,34 +94,31 @@
                                     <span class="text-xs text-gray-500 italic">Luôn mở</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 text-center">
                                 <form action="{{ route('teacher.exams.update-status', $exam) }}" method="POST" class="inline-block m-0">
                                     @csrf
                                     @method('PATCH')
                                     <select name="status" onchange="this.form.submit()" class="text-xs font-semibold rounded-full px-2.5 py-1 border-0 ring-1 ring-inset shadow-sm cursor-pointer appearance-none text-center
-                                        @if($exam->status == 'draft') bg-gray-50 text-gray-700 ring-gray-200 focus:ring-gray-300
-                                        @elseif($exam->status == 'published') bg-blue-50 text-blue-700 ring-blue-200 focus:ring-blue-300
-                                        @elseif($exam->status == 'ongoing') bg-emerald-50 text-emerald-700 ring-emerald-200 focus:ring-emerald-300
+                                        @if($exam->status == 'published') bg-blue-50 text-blue-700 ring-blue-200 focus:ring-blue-300
                                         @else bg-red-50 text-red-700 ring-red-200 focus:ring-red-300
                                         @endif
                                     ">
-                                        <option value="draft" {{ $exam->status == 'draft' ? 'selected' : '' }}>Nháp</option>
-                                        <option value="published" {{ $exam->status == 'published' ? 'selected' : '' }}>Xuất bản</option>
-                                        <option value="ongoing" {{ $exam->status == 'ongoing' ? 'selected' : '' }}>Đang diễn ra</option>
-                                        <option value="closed" {{ $exam->status == 'closed' ? 'selected' : '' }}>Đã đóng</option>
+                                        <option value="published" {{ $exam->status == 'published' ? 'selected' : '' }}>Mở</option>
+                                        <option value="closed" {{ $exam->status == 'closed' ? 'selected' : '' }}>Đóng</option>
                                     </select>
                                 </form>
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    @if($exam->status === 'draft')
-                                        <a href="{{ route('teacher.exams.edit', $exam) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="Sửa đề thi">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </a>
-                                    @endif
-                                    <button class="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors" title="Xem chi tiết">
+                                    <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xem điểm">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    </a>
+                                    <a href="{{ route('teacher.exams.edit', $exam) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="Sửa đề thi">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </a>
+                                    <a href="{{ route('teacher.exams.monitor', $exam) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors" title="Giám sát phòng thi">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

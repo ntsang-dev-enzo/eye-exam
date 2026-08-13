@@ -67,6 +67,62 @@ class QuestionController extends Controller
         return redirect()->route('teacher.questions.index')->with('success', 'Câu hỏi đã được thêm vào ngân hàng.');
     }
 
+    public function edit(Question $question)
+    {
+        if ($question->created_by !== auth()->id()) {
+            abort(403, 'Bạn không có quyền sửa câu hỏi này.');
+        }
+
+        $subjects = auth()->user()->subjects()->where('status', true)->get();
+        $question->load('answers');
+        
+        return view('teacher.questions.edit', compact('question', 'subjects'));
+    }
+
+    public function update(Request $request, Question $question)
+    {
+        if ($question->created_by !== auth()->id()) {
+            abort(403, 'Bạn không có quyền sửa câu hỏi này.');
+        }
+
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'content' => 'required|string',
+            'type' => 'required|in:multiple_choice,essay',
+            'difficulty' => 'required|in:easy,medium,hard',
+            'answers' => 'required_if:type,multiple_choice|array|min:2',
+            'correct_answer' => 'required_if:type,multiple_choice',
+        ]);
+
+        $question->update([
+            'subject_id' => $request->subject_id,
+            'content' => $request->content,
+            'type' => $request->type,
+            'difficulty' => $request->difficulty,
+            'explanation' => $request->explanation,
+        ]);
+
+        if ($request->type === 'multiple_choice' && $request->has('answers')) {
+            // Xóa các đáp án cũ
+            $question->answers()->delete();
+            
+            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            foreach ($request->answers as $index => $answerContent) {
+                if (!empty($answerContent)) {
+                    $question->answers()->create([
+                        'label' => $labels[$index] ?? chr(65 + $index),
+                        'content' => $answerContent,
+                        'is_correct' => ($request->correct_answer == $index)
+                    ]);
+                }
+            }
+        } elseif ($request->type === 'essay') {
+             $question->answers()->delete();
+        }
+
+        return redirect()->route('teacher.questions.index')->with('success', 'Cập nhật câu hỏi thành công.');
+    }
+
     public function apiIndex(Request $request)
     {
         $query = Question::with('subject')->where('created_by', auth()->id());

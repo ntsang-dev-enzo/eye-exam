@@ -20,6 +20,8 @@ class Exam extends Model
         'start_at',
         'end_at',
         'status',
+        'max_attempts',
+        'allow_review',
         'shuffle_questions',
         'shuffle_answers',
     ];

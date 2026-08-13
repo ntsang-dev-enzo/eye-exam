@@ -12,26 +12,12 @@
         <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-gradient-to-tr from-emerald-50 to-teal-50 opacity-50 blur-3xl pointer-events-none"></div>
 
         <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
+            <div class="md:col-span-2">
                 <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Chào mừng, {{ auth()->user()->name }}!</h1>
                 <p class="text-gray-500 mb-6">Mã SV: {{ auth()->user()->code }}</p>
                 <div class="flex items-center gap-2">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">Sinh viên</span>
                 </div>
-            </div>
-            
-            <div class="bg-gray-50/80 backdrop-blur border border-gray-100 p-6 rounded-2xl shadow-inner">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">Tham gia kỳ thi</h3>
-                <form action="{{ route('student.exams.join') }}" method="POST" class="flex gap-3">
-                    @csrf
-                    <input type="text" name="code" required placeholder="Nhập mã đề thi (VD: X8F9A)" class="flex-1 rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 px-4 py-3 text-sm font-medium uppercase placeholder:normal-case shadow-sm" autocomplete="off">
-                    <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition-colors whitespace-nowrap">
-                        Vào thi
-                    </button>
-                </form>
-                @error('code')
-                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                @enderror
             </div>
         </div>
     </div>
@@ -49,7 +35,7 @@
                     <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-1">Chưa có bài thi nào</h3>
-                <p class="text-gray-500">Bạn chưa tham gia kỳ thi nào. Hãy nhập mã đề thi ở phía trên để bắt đầu.</p>
+                <p class="text-gray-500">Bạn chưa tham gia kỳ thi nào. Hãy vào mục "Kỳ thi của tôi" để xem các bài thi được giao.</p>
             </div>
         @else
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -105,10 +91,14 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                     </a>
                                 @else
-                                    <a href="#" class="text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-                                        Xem chi tiết
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                    </a>
+                                    @if($attempt->exam->allow_review)
+                                        <a href="{{ route('student.exams.review', $attempt->exam) }}" class="text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                                            Xem lại bài
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                        </a>
+                                    @else
+                                        <span class="text-sm font-medium text-gray-400 italic">Không xem lại bài</span>
+                                    @endif
                                 @endif
                             </div>
                         </div>

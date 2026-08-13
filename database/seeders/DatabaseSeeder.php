@@ -15,20 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
-
         $this->call([
             UserSeeder::class,
         ]);
 
-        \App\Models\Subject::insert([
+        $subjects = [
             ['code' => 'CS101', 'name' => 'Lập trình C++', 'description' => 'Cơ bản C++', 'status' => true],
             ['code' => 'CS102', 'name' => 'Toán Rời Rạc', 'description' => 'Toán học máy tính', 'status' => true],
             ['code' => 'CS103', 'name' => 'Cơ sở Dữ liệu', 'description' => 'SQL & NoSQL', 'status' => true],
             ['code' => 'CS104', 'name' => 'Phát triển Web', 'description' => 'HTML, CSS, JS, PHP', 'status' => true],
+        ];
+
+        foreach ($subjects as $subject) {
+            \App\Models\Subject::firstOrCreate(['code' => $subject['code']], $subject);
+        }
+
+        $this->call([
+            TestDataSeeder::class,
         ]);
     }
 }

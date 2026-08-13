@@ -38,6 +38,11 @@
                     </div>
                     
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Số lần thi tối đa <span class="text-red-500">*</span></label>
+                        <input type="number" name="max_attempts" value="{{ old('max_attempts', $exam->max_attempts ?? 1) }}" min="1" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                    </div>
+                    
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Thời gian bắt đầu (Tùy chọn)</label>
                         <input type="datetime-local" name="start_at" value="{{ old('start_at', $exam->start_at ? $exam->start_at->format('Y-m-d\TH:i') : '') }}" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
                     </div>
@@ -45,6 +50,14 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Thời gian kết thúc (Tùy chọn)</label>
                         <input type="datetime-local" name="end_at" value="{{ old('end_at', $exam->end_at ? $exam->end_at->format('Y-m-d\TH:i') : '') }}" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái <span class="text-red-500">*</span></label>
+                        <select name="status" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                            <option value="published" {{ old('status', $exam->status) === 'published' ? 'selected' : '' }}>Mở</option>
+                            <option value="closed" {{ old('status', $exam->status) === 'closed' ? 'selected' : '' }}>Đóng</option>
+                        </select>
                     </div>
                     
                     <div class="flex flex-col justify-center gap-3 mt-4">
@@ -55,6 +68,10 @@
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="shuffle_answers" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4" {{ old('shuffle_answers', $exam->shuffle_answers) ? 'checked' : '' }}>
                             <span class="text-sm text-gray-700 font-medium">Trộn thứ tự đáp án (Trắc nghiệm)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="allow_review" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4" {{ old('allow_review', $exam->allow_review) ? 'checked' : '' }}>
+                            <span class="text-sm text-gray-700 font-medium">Cho phép sinh viên xem lại bài thi</span>
                         </label>
                     </div>
                 </div>

@@ -15,7 +15,7 @@ class AssignmentController extends Controller
         $classes = SchoolClass::where('teacher_id', auth()->id())->get();
         
         $exams = Exam::where('created_by', auth()->id())
-            ->whereIn('status', ['closed', 'published'])
+            ->whereIn('status', ['published', 'closed'])
             ->latest()
             ->get();
             

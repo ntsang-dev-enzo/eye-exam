@@ -18,13 +18,24 @@ class ClassController extends Controller
         return view('teacher.classes.index', compact('classes'));
     }
 
-    public function show(SchoolClass $class)
+    public function show(Request $request, SchoolClass $class)
     {
         if ($class->teacher_id !== auth()->id()) {
             abort(403, 'Bạn không có quyền xem lớp này.');
         }
 
-        $students = $class->students()->orderBy('name')->get();
+        $query = $class->students();
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        
+        $students = $query->orderBy('name')->get();
         
         return view('teacher.classes.show', compact('class', 'students'));
     }

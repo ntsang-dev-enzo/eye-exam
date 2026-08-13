@@ -6,10 +6,62 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\ExamAnswer;
+use App\Models\ExamAssignment;
 use Illuminate\Http\Request;
 
 class ExamController extends Controller
 {
+    public function index()
+    {
+        $assignments = ExamAssignment::with(['exam.subject'])
+            ->where('student_id', auth()->id())
+            ->latest()
+            ->get();
+            
+        // Calculate status for each assigned exam
+        $exams = $assignments->map(function ($assignment) {
+            $exam = $assignment->exam;
+            $now = now();
+            
+            $attempt = ExamAttempt::where('exam_id', $exam->id)
+                ->where('student_id', auth()->id())
+                ->latest()
+                ->first();
+                
+            $submittedCount = ExamAttempt::where('exam_id', $exam->id)
+                ->where('student_id', auth()->id())
+                ->where('status', 'submitted')
+                ->count();
+                
+            $exam->attempt_status = $attempt ? $attempt->status : null;
+            $exam->score = $attempt ? $attempt->score_value : null;
+            
+            if ($exam->start_at && $now->lt($exam->start_at)) {
+                $exam->calculated_status = 'Sắp thi';
+                $exam->status_color = 'amber';
+            } elseif ($exam->end_at && $now->gt($exam->end_at)) {
+                $exam->calculated_status = 'Đã hết hạn';
+                $exam->status_color = 'rose';
+            } elseif ($exam->status !== 'published') {
+                $exam->calculated_status = 'Đang khóa';
+                $exam->status_color = 'gray';
+            } elseif ($attempt && $attempt->status === 'in_progress') {
+                $exam->calculated_status = 'Đang thi';
+                $exam->status_color = 'blue';
+            } elseif ($submittedCount >= ($exam->max_attempts ?? 1)) {
+                $exam->calculated_status = 'Đã nộp bài';
+                $exam->status_color = 'emerald';
+            } else {
+                $exam->calculated_status = $submittedCount > 0 ? 'Thi lại' : 'Đang thi';
+                $exam->status_color = 'blue';
+            }
+            
+            return $exam;
+        });
+        
+        return view('student.exams.index', compact('exams'));
+    }
+
     public function join(Request $request)
     {
         $request->validate(['code' => 'required|string']);
@@ -32,16 +84,24 @@ class ExamController extends Controller
             return back()->withErrors(['code' => 'Kỳ thi đã kết thúc.']);
         }
 
-        // Check if already attempted
-        $attempt = ExamAttempt::where('exam_id', $exam->id)
+        // Check if there is an in_progress attempt
+        $inProgress = ExamAttempt::where('exam_id', $exam->id)
             ->where('student_id', auth()->id())
+            ->where('status', 'in_progress')
             ->first();
 
-        if ($attempt) {
-            if ($attempt->status === 'submitted') {
-                return back()->withErrors(['code' => 'Bạn đã hoàn thành bài thi này rồi.']);
-            }
+        if ($inProgress) {
             return redirect()->route('student.exams.take', $exam);
+        }
+
+        // Check max attempts
+        $submittedCount = ExamAttempt::where('exam_id', $exam->id)
+            ->where('student_id', auth()->id())
+            ->where('status', 'submitted')
+            ->count();
+
+        if ($submittedCount >= ($exam->max_attempts ?? 1)) {
+            return back()->withErrors(['code' => 'Bạn đã vượt quá số lần làm bài cho phép.']);
         }
 
         // Create new attempt
@@ -59,9 +119,11 @@ class ExamController extends Controller
     {
         $attempt = ExamAttempt::where('exam_id', $exam->id)
             ->where('student_id', auth()->id())
+            ->where('status', 'in_progress')
+            ->latest()
             ->first();
 
-        if (!$attempt || $attempt->status !== 'in_progress') {
+        if (!$attempt) {
             return redirect()->route('student.dashboard')->with('error', 'Bạn không thể truy cập bài thi này.');
         }
         
@@ -143,5 +205,45 @@ class ExamController extends Controller
         ]);
 
         return redirect()->route('student.dashboard')->with('success', 'Nộp bài thi thành công!');
+    }
+
+    public function cheat(Request $request, $attemptId)
+    {
+        $attempt = ExamAttempt::where('id', $attemptId)
+            ->where('student_id', auth()->id())
+            ->first();
+            
+        if ($attempt) {
+            $attempt->increment('cheat_warnings');
+            
+            // If they pass out_time, add it
+            if ($request->has('out_time')) {
+                $attempt->increment('out_of_screen_time', (int) $request->out_time);
+            }
+        }
+        
+        return response()->json(['success' => true]);
+    }
+
+    public function review(Exam $exam)
+    {
+        if (!$exam->allow_review) {
+            return redirect()->route('student.exams.index')->with('error', 'Kỳ thi này không cho phép xem lại bài.');
+        }
+
+        $attempt = ExamAttempt::with('answers')->where('exam_id', $exam->id)
+            ->where('student_id', auth()->id())
+            ->where('status', 'submitted')
+            ->latest()
+            ->first();
+
+        if (!$attempt) {
+            return redirect()->route('student.exams.index')->with('error', 'Không tìm thấy bài thi.');
+        }
+
+        $exam->load(['questions.answers']);
+        $studentAnswers = $attempt->answers->keyBy('question_id');
+
+        return view('student.exams.review', compact('exam', 'attempt', 'studentAnswers'));
     }
 }

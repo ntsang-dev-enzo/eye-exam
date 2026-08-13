@@ -18,6 +18,8 @@ class ExamAttempt extends Model
         'correct_answers',
         'wrong_answers',
         'unanswered',
+        'cheat_warnings',
+        'out_of_screen_time',
         'total_out_seconds',
         'violation_count'
     ];

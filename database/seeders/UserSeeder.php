@@ -14,45 +14,53 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Admin
-        User::create([
-            'name' => 'System Admin',
-            'code' => 'AD001',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-            'status' => 'active',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'System Admin',
+                'code' => 'AD001',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'status' => 'active',
+            ]
+        );
 
         // Teacher 1
-        User::create([
-            'name' => 'Nguyễn Văn Giảng Viên',
-            'code' => 'GV001',
-            'email' => 'teacher@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'teacher',
-            'department' => 'Khoa CNTT',
-            'status' => 'active',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'teacher@example.com'],
+            [
+                'name' => 'Nguyễn Văn Giảng Viên',
+                'code' => 'GV001',
+                'password' => Hash::make('password'),
+                'role' => 'teacher',
+                'department' => 'Khoa CNTT',
+                'status' => 'active',
+            ]
+        );
 
         // Teacher 2
-        User::create([
-            'name' => 'Trần Thị Giảng Viên 2',
-            'code' => 'GV002',
-            'email' => 'teacher2@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'teacher',
-            'department' => 'Khoa Kinh tế',
-            'status' => 'active',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'teacher2@example.com'],
+            [
+                'name' => 'Trần Thị Giảng Viên 2',
+                'code' => 'GV002',
+                'password' => Hash::make('password'),
+                'role' => 'teacher',
+                'department' => 'Khoa Kinh tế',
+                'status' => 'active',
+            ]
+        );
 
         // Student
-        User::create([
-            'name' => 'Student One',
-            'code' => 'SV001',
-            'email' => 'student@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'student',
-            'status' => 'active',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'student@example.com'],
+            [
+                'name' => 'Student One',
+                'code' => 'SV001',
+                'password' => Hash::make('password'),
+                'role' => 'student',
+                'status' => 'active',
+            ]
+        );
     }
 }

@@ -31,9 +31,16 @@
                         <textarea name="description" rows="2" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm" placeholder="Hướng dẫn làm bài..."></textarea>
                     </div>
 
+                    <!-- Duration -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Thời gian làm bài (Phút) <span class="text-red-500">*</span></label>
-                        <input type="number" name="duration_minutes" value="60" min="1" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Thời gian làm bài (phút) <span class="text-red-500">*</span></label>
+                        <input type="number" name="duration_minutes" value="{{ old('duration_minutes', 45) }}" min="1" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                    </div>
+
+                    <!-- Max Attempts -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Số lần thi tối đa <span class="text-red-500">*</span></label>
+                        <input type="number" name="max_attempts" value="{{ old('max_attempts', 1) }}" min="1" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
                     </div>
                     
                     <div>
@@ -54,6 +61,10 @@
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="shuffle_answers" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4">
                             <span class="text-sm text-gray-700 font-medium">Trộn thứ tự đáp án (Trắc nghiệm)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="allow_review" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4" checked>
+                            <span class="text-sm text-gray-700 font-medium">Cho phép sinh viên xem lại bài thi</span>
                         </label>
                     </div>
                 </div>
