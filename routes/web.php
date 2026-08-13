@@ -55,3 +55,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/de-thi/{exam}/nop-bai', [\App\Http\Controllers\Student\ExamController::class, 'submit'])->name('exams.submit');
     });
 });
+//Homepage
+
+use App\Http\Controllers\HomeController;
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
