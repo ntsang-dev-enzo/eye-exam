@@ -2,15 +2,30 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SubjectController as AdminSubjectController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\QuestionController as TeacherQuestionController;
+use App\Http\Controllers\Teacher\ExamController as TeacherExamController;
+use App\Http\Controllers\Teacher\ClassController as TeacherClassController;
+use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
+use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\ExamController as StudentExamController;
+use App\Http\Controllers\Student\CourseController as StudentCourseController;
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/dang-nhap', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/dang-nhap', [AuthController::class, 'login']);
 Route::post('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
-    // Admin routes
-    Route::prefix('quan-tri')->name('admin.')->group(function () {
-        Route::get('/tong-quan', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    // Admin routes (Protected by role:admin)
+    Route::prefix('admin')->middleware('role:admin')->name('admin.')->group(function () {
+        Route::get('/tong-quan', [AdminDashboardController::class, 'index'])->name('dashboard');
         
         // Subjects
         Route::get('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('subjects.index');
@@ -33,22 +48,32 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi', [\App\Http\Controllers\Admin\ExamController::class, 'index'])->name('exams.index');
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Admin\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Admin\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
+
+        // Course Management (Khóa học) - Exact Vietnamese URLs
+        Route::get('/khoa-hoc', [AdminCourseController::class, 'index'])->name('khoa-hoc.index');
+        Route::get('/khoa-hoc/them-moi', [AdminCourseController::class, 'create'])->name('khoa-hoc.create');
+        Route::post('/khoa-hoc', [AdminCourseController::class, 'store'])->name('khoa-hoc.store');
+        Route::get('/khoa-hoc/{khoaHoc}', [AdminCourseController::class, 'show'])->name('khoa-hoc.show');
+        Route::get('/khoa-hoc/{khoaHoc}/chinh-sua', [AdminCourseController::class, 'edit'])->name('khoa-hoc.edit');
+        Route::put('/khoa-hoc/{khoaHoc}', [AdminCourseController::class, 'update'])->name('khoa-hoc.update');
+        Route::delete('/khoa-hoc/{khoaHoc}', [AdminCourseController::class, 'destroy'])->name('khoa-hoc.destroy');
     });
 
-    // Teacher routes
-    Route::prefix('giang-vien')->name('teacher.')->group(function () {
-        Route::get('/tong-quan', [\App\Http\Controllers\Teacher\DashboardController::class, 'index'])->name('dashboard');
+    // Teacher routes (Protected by role:teacher)
+    Route::prefix('giang-vien')->middleware('role:teacher')->name('teacher.')->group(function () {
+        Route::get('/tong-quan', [TeacherDashboardController::class, 'index'])->name('dashboard');
         
         // Questions API
-        Route::get('/api/cau-hoi', [\App\Http\Controllers\Teacher\QuestionController::class, 'apiIndex'])->name('api.questions.index');
-        Route::post('/api/cau-hoi', [\App\Http\Controllers\Teacher\QuestionController::class, 'apiStore'])->name('api.questions.store');
+        Route::get('/api/cau-hoi', [TeacherQuestionController::class, 'apiIndex'])->name('api.questions.index');
+        Route::post('/api/cau-hoi', [TeacherQuestionController::class, 'apiStore'])->name('api.questions.store');
         
         // Questions
-        Route::get('/cau-hoi', [\App\Http\Controllers\Teacher\QuestionController::class, 'index'])->name('questions.index');
-        Route::get('/cau-hoi/tao-moi', [\App\Http\Controllers\Teacher\QuestionController::class, 'create'])->name('questions.create');
-        Route::post('/cau-hoi', [\App\Http\Controllers\Teacher\QuestionController::class, 'store'])->name('questions.store');
+        Route::get('/cau-hoi', [TeacherQuestionController::class, 'index'])->name('questions.index');
+        Route::get('/cau-hoi/tao-moi', [TeacherQuestionController::class, 'create'])->name('questions.create');
+        Route::post('/cau-hoi', [TeacherQuestionController::class, 'store'])->name('questions.store');
         
         // Exams
+
         Route::get('/de-thi', [\App\Http\Controllers\Teacher\ExamController::class, 'index'])->name('exams.index');
         Route::get('/de-thi/tao-moi', [\App\Http\Controllers\Teacher\ExamController::class, 'create'])->name('exams.create');
         Route::post('/de-thi', [\App\Http\Controllers\Teacher\ExamController::class, 'store'])->name('exams.store');
@@ -58,14 +83,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi/{exam}/ket-qua', [\App\Http\Controllers\Teacher\ExamController::class, 'results'])->name('exams.results');
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Teacher\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
-        
+
         // Classes
-        Route::get('/lop-hoc', [\App\Http\Controllers\Teacher\ClassController::class, 'index'])->name('classes.index');
-        Route::get('/lop-hoc/{class}', [\App\Http\Controllers\Teacher\ClassController::class, 'show'])->name('classes.show');
+        Route::get('/lop-hoc', [TeacherClassController::class, 'index'])->name('classes.index');
+        Route::get('/lop-hoc/{class}', [TeacherClassController::class, 'show'])->name('classes.show');
 
         // Assignments
-        Route::get('/giao-de-thi', [\App\Http\Controllers\Teacher\AssignmentController::class, 'create'])->name('assignments.create');
-        Route::post('/giao-de-thi', [\App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/giao-de-thi', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/giao-de-thi', [TeacherAssignmentController::class, 'store'])->name('assignments.store');
+
+        // Teacher Course View (Khóa học của tôi)
+        Route::get('/khoa-hoc-cua-toi', [TeacherCourseController::class, 'index'])->name('khoa-hoc.index');
     });
 
     // Student routes
@@ -78,11 +106,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/de-thi/{exam}/nop-bai', [\App\Http\Controllers\Student\ExamController::class, 'submit'])->name('exams.submit');
         Route::post('/attempt/{attempt}/cheat', [\App\Http\Controllers\Student\ExamController::class, 'cheat'])->name('exams.cheat');
         Route::get('/de-thi/{exam}/xem-lai', [\App\Http\Controllers\Student\ExamController::class, 'review'])->name('exams.review');
+
+
+        // Student Course View (Khóa học của tôi)
+        Route::get('/khoa-hoc-cua-toi', [StudentCourseController::class, 'index'])->name('khoa-hoc.index');
     });
 });
-//Homepage
-
-use App\Http\Controllers\HomeController;
-
-Route::get('/', [HomeController::class, 'index'])->name('home');
-
