@@ -40,12 +40,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi/{exam}/sua', [\App\Http\Controllers\Teacher\ExamController::class, 'edit'])->name('exams.edit');
         Route::put('/de-thi/{exam}', [\App\Http\Controllers\Teacher\ExamController::class, 'update'])->name('exams.update');
         Route::patch('/de-thi/{exam}/trang-thai', [\App\Http\Controllers\Teacher\ExamController::class, 'updateStatus'])->name('exams.update-status');
+        
+        // Classes
+        Route::get('/lop-hoc', [\App\Http\Controllers\Teacher\ClassController::class, 'index'])->name('classes.index');
+        Route::get('/lop-hoc/{class}', [\App\Http\Controllers\Teacher\ClassController::class, 'show'])->name('classes.show');
+
+        // Assignments
+        Route::get('/giao-de-thi', [\App\Http\Controllers\Teacher\AssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/giao-de-thi', [\App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('assignments.store');
     });
 
     // Student routes
     Route::prefix('sinh-vien')->name('student.')->group(function () {
         Route::get('/tong-quan', [\App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
         
+        Route::get('/ky-thi-cua-toi', [\App\Http\Controllers\Student\ExamController::class, 'index'])->name('exams.index');
         Route::post('/de-thi/tham-gia', [\App\Http\Controllers\Student\ExamController::class, 'join'])->name('exams.join');
         Route::get('/de-thi/{exam}/lam-bai', [\App\Http\Controllers\Student\ExamController::class, 'take'])->name('exams.take');
         Route::post('/de-thi/{exam}/nop-bai', [\App\Http\Controllers\Student\ExamController::class, 'submit'])->name('exams.submit');
