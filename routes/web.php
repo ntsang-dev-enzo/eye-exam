@@ -3,10 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 Route::get('/dang-nhap', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/dang-nhap', [AuthController::class, 'login']);
 Route::post('/dang-xuat', [AuthController::class, 'logout'])->name('logout');
