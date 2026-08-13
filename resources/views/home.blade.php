@@ -67,7 +67,7 @@
 
             <!-- BUTTON -->
             <div class="flex items-center gap-4">
-                <a href="/login" class="px-7 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-600/25 transition-all duration-300 active:scale-95 flex items-center gap-2">
+                <a href="/dang-nhap" class="px-7 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-600/25 transition-all duration-300 active:scale-95 flex items-center gap-2">
                     <span>Đăng nhập</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </a>
@@ -107,7 +107,7 @@
             </p>
 
             <div class="mt-12 flex flex-col sm:flex-row gap-5 animate-fade-in-up" style="animation-delay: 300ms;">
-                <a href="/login" class="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-3">
+                <a href="/dang-nhap" class="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-3">
                     Tham gia kỳ thi ngay
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>
