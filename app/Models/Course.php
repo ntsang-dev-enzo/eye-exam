@@ -24,4 +24,12 @@ class Course extends Model
     {
         return $this->belongsToMany(Subject::class, 'course_subject')->withTimestamps();
     }
+
+    /**
+     * Get the classes linked to this course.
+     */
+    public function classes()
+    {
+        return $this->hasMany(SchoolClass::class, 'course_id');
+    }
 }

@@ -42,6 +42,19 @@
             </div>
 
             <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Khóa học / Chương trình đào tạo</label>
+                <select name="course_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                    <option value="">-- Chọn Khóa học (Tùy chọn) --</option>
+                    @foreach($courses as $course)
+                        <option value="{{ $course->id }}" {{ old('course_id', $class->course_id) == $course->id ? 'selected' : '' }}>
+                            {{ $course->name }} ({{ $course->semester }} - {{ $course->academic_year }})
+                        </option>
+                    @endforeach
+                </select>
+                @error('course_id') <p class="mt-1 text-xs text-rose-500">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">Giảng viên chủ nhiệm <span class="text-rose-500">*</span></label>
                 <select name="teacher_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
                     <option value="">-- Chọn giảng viên --</option>
