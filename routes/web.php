@@ -43,6 +43,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/lop-hoc/{class}', [\App\Http\Controllers\Admin\ClassController::class, 'show'])->name('classes.show');
         Route::post('/lop-hoc/{class}/assign', [\App\Http\Controllers\Admin\ClassController::class, 'assign'])->name('classes.assign');
         Route::delete('/lop-hoc/{class}/assign/{subject_id}', [\App\Http\Controllers\Admin\ClassController::class, 'removeAssign'])->name('classes.remove-assign');
+        Route::post('/lop-hoc/{class}/sinh-vien', [\App\Http\Controllers\Admin\ClassController::class, 'addStudent'])->name('classes.add-student');
+        Route::delete('/lop-hoc/{class}/sinh-vien/{student}', [\App\Http\Controllers\Admin\ClassController::class, 'removeStudent'])->name('classes.remove-student');
 
         // Exams
         Route::get('/de-thi', [\App\Http\Controllers\Admin\ExamController::class, 'index'])->name('exams.index');
@@ -84,9 +86,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Teacher\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
 
-        // Classes
+        // Classes & Attendance
         Route::get('/lop-hoc', [TeacherClassController::class, 'index'])->name('classes.index');
         Route::get('/lop-hoc/{class}', [TeacherClassController::class, 'show'])->name('classes.show');
+        Route::get('/lop-hoc/{class}/diem-danh', [TeacherClassController::class, 'attendance'])->name('classes.attendance');
+        Route::post('/lop-hoc/{class}/diem-danh', [TeacherClassController::class, 'storeAttendance'])->name('classes.store-attendance');
+        Route::get('/lop-hoc/{class}/lich-su-diem-danh', [TeacherClassController::class, 'attendanceHistory'])->name('classes.attendance-history');
 
         // Assignments
         Route::get('/giao-de-thi', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
@@ -107,6 +112,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/attempt/{attempt}/cheat', [\App\Http\Controllers\Student\ExamController::class, 'cheat'])->name('exams.cheat');
         Route::get('/de-thi/{exam}/xem-lai', [\App\Http\Controllers\Student\ExamController::class, 'review'])->name('exams.review');
 
+        // Student Classes View
+        Route::get('/lop-hoc-cua-toi', [\App\Http\Controllers\Student\ClassController::class, 'index'])->name('classes.index');
+        Route::get('/lop-hoc-cua-toi/{class}', [\App\Http\Controllers\Student\ClassController::class, 'show'])->name('classes.show');
 
         // Student Course View (Khóa học của tôi)
         Route::get('/khoa-hoc-cua-toi', [StudentCourseController::class, 'index'])->name('khoa-hoc.index');
