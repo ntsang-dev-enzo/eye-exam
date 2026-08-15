@@ -118,5 +118,8 @@ Route::middleware('auth')->group(function () {
 
         // Student Course View (Khóa học của tôi)
         Route::get('/khoa-hoc-cua-toi', [StudentCourseController::class, 'index'])->name('khoa-hoc.index');
+
+        // Student Profile (Thông tin sinh viên)
+        Route::get('/thong-tin', [\App\Http\Controllers\Student\ProfileController::class, 'index'])->name('profile');
     });
 });
