@@ -18,7 +18,13 @@ class CheckActiveExam
     {
         if (auth()->check() && auth()->user()->role === 'student') {
             // Check if they are already on the exam taking route or submitting or cheating
-            $allowedRoutes = ['student.exams.take', 'student.exams.submit', 'student.exams.cheat'];
+            $allowedRoutes = [
+                'student.exams.take',
+                'student.exams.submit',
+                'student.exams.cheat',
+                'student.exams.save-answer',
+                'student.exams.sync-offline'
+            ];
             
             if (!in_array($request->route()->getName(), $allowedRoutes)) {
                 // Look for in_progress attempt

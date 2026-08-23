@@ -16,11 +16,18 @@ class ExamController extends Controller
     {
         $subjects = auth()->user()->subjects()->where('status', true)->get();
         $classes = \App\Models\SchoolClass::where('teacher_id', auth()->id())->get();
+        $categories = \App\Models\Category::where('created_by', auth()->id())
+            ->orWhereNull('created_by')
+            ->get();
         
-        $query = Exam::with('subject')->where('created_by', auth()->id());
+        $query = Exam::with(['subject', 'category'])->where('created_by', auth()->id());
         
         if ($request->has('subject_id') && $request->subject_id != '') {
             $query->where('subject_id', $request->subject_id);
+        }
+
+        if ($request->has('category_id') && $request->category_id != '') {
+            $query->where('category_id', $request->category_id);
         }
         
         if ($request->has('status') && $request->status != '') {
@@ -44,36 +51,44 @@ class ExamController extends Controller
         
         $exams = $query->latest()->paginate(15);
         
-        return view('teacher.exams.index', compact('exams', 'subjects', 'classes'));
+        return view('teacher.exams.index', compact('exams', 'subjects', 'classes', 'categories'));
     }
 
     public function create()
     {
         $subjects = auth()->user()->subjects()->where('status', true)->get();
-        return view('teacher.exams.create', compact('subjects'));
+        $categories = \App\Models\Category::where('created_by', auth()->id())
+            ->orWhereNull('created_by')
+            ->get();
+        return view('teacher.exams.create', compact('subjects', 'categories'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
+            'category_id' => 'nullable|exists:categories,id',
             'title' => 'required|string|max:255',
             'duration_minutes' => 'required|integer|min:1',
-            'max_attempts' => 'required|integer|min:1',
+            'max_attempts' => 'nullable|integer|min:0',
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'questions' => 'required|array|min:1', // Array of question IDs
             'points' => 'required|array', // Array of points per question
         ]);
 
+        $maxAttempts = $request->has('unlimited_attempts') || $request->max_attempts === '0' || empty($request->max_attempts) ? 0 : (int) $request->max_attempts;
+        $enableAntiCheat = $request->has('enable_anti_cheat');
+
         $exam = Exam::create([
             'subject_id' => $request->subject_id,
+            'category_id' => $request->category_id,
             'created_by' => auth()->id(),
             'code' => strtoupper(Str::random(8)),
             'title' => $request->title,
             'description' => $request->description,
             'duration_minutes' => $request->duration_minutes,
-            'max_attempts' => $request->max_attempts,
+            'max_attempts' => $maxAttempts,
             'start_at' => $request->start_at,
             'end_at' => $request->end_at,
             'total_questions' => count($request->questions),
@@ -81,6 +96,12 @@ class ExamController extends Controller
             'shuffle_questions' => $request->has('shuffle_questions'),
             'shuffle_answers' => $request->has('shuffle_answers'),
             'allow_review' => $request->has('allow_review'),
+            'enable_anti_cheat' => $enableAntiCheat,
+            'require_fullscreen' => $enableAntiCheat && $request->has('require_fullscreen'),
+            'prevent_tab_switch' => $enableAntiCheat && $request->has('prevent_tab_switch'),
+            'prevent_copy_paste' => $enableAntiCheat && $request->has('prevent_copy_paste'),
+            'prevent_right_click' => $enableAntiCheat && $request->has('prevent_right_click'),
+            'prevent_screen_capture' => $enableAntiCheat && $request->has('prevent_screen_capture'),
         ]);
 
         foreach ($request->questions as $index => $questionId) {
@@ -100,11 +121,14 @@ class ExamController extends Controller
         }
 
         $subjects = auth()->user()->subjects()->where('status', true)->get();
+        $categories = \App\Models\Category::where('created_by', auth()->id())
+            ->orWhereNull('created_by')
+            ->get();
         $exam->load(['questions' => function($q) {
             $q->orderBy('exam_questions.question_order');
         }]);
         
-        return view('teacher.exams.edit', compact('exam', 'subjects'));
+        return view('teacher.exams.edit', compact('exam', 'subjects', 'categories'));
     }
 
     public function update(Request $request, Exam $exam)
@@ -115,9 +139,10 @@ class ExamController extends Controller
 
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
+            'category_id' => 'nullable|exists:categories,id',
             'title' => 'required|string|max:255',
             'duration_minutes' => 'required|integer|min:1',
-            'max_attempts' => 'required|integer|min:1',
+            'max_attempts' => 'nullable|integer|min:0',
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'status' => 'required|in:published,closed',
@@ -125,12 +150,16 @@ class ExamController extends Controller
             'points' => 'required|array', // Array of points per question
         ]);
 
+        $maxAttempts = $request->has('unlimited_attempts') || $request->max_attempts === '0' || empty($request->max_attempts) ? 0 : (int) $request->max_attempts;
+        $enableAntiCheat = $request->has('enable_anti_cheat');
+
         $exam->update([
             'subject_id' => $request->subject_id,
+            'category_id' => $request->category_id,
             'title' => $request->title,
             'description' => $request->description,
             'duration_minutes' => $request->duration_minutes,
-            'max_attempts' => $request->max_attempts,
+            'max_attempts' => $maxAttempts,
             'start_at' => $request->start_at,
             'end_at' => $request->end_at,
             'status' => $request->status,
@@ -138,6 +167,12 @@ class ExamController extends Controller
             'shuffle_questions' => $request->has('shuffle_questions'),
             'shuffle_answers' => $request->has('shuffle_answers'),
             'allow_review' => $request->has('allow_review'),
+            'enable_anti_cheat' => $enableAntiCheat,
+            'require_fullscreen' => $enableAntiCheat && $request->has('require_fullscreen'),
+            'prevent_tab_switch' => $enableAntiCheat && $request->has('prevent_tab_switch'),
+            'prevent_copy_paste' => $enableAntiCheat && $request->has('prevent_copy_paste'),
+            'prevent_right_click' => $enableAntiCheat && $request->has('prevent_right_click'),
+            'prevent_screen_capture' => $enableAntiCheat && $request->has('prevent_screen_capture'),
         ]);
 
         $syncData = [];
@@ -150,6 +185,17 @@ class ExamController extends Controller
         $exam->questions()->sync($syncData);
 
         return redirect()->route('teacher.exams.index')->with('success', 'Cập nhật đề thi thành công!');
+    }
+
+    public function destroy(Exam $exam)
+    {
+        if ($exam->created_by !== auth()->id()) {
+            abort(403, 'Bạn không có quyền xóa đề thi này.');
+        }
+
+        $exam->delete();
+
+        return redirect()->route('teacher.exams.index')->with('success', 'Đã xóa đề thi thành công!');
     }
 
     public function updateStatus(Request $request, Exam $exam)
@@ -205,21 +251,97 @@ class ExamController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $attempts = ExamAttempt::with('student')
+        $attempts = ExamAttempt::with(['student', 'antiCheatLogs' => function($q) {
+                $q->latest('occurred_at')->limit(1);
+            }])
             ->where('exam_id', $exam->id)
             ->where('status', 'in_progress')
             ->get()
             ->map(function ($attempt) {
+                $lastLog = $attempt->antiCheatLogs->first();
                 return [
                     'id' => $attempt->id,
                     'student_name' => $attempt->student->name ?? 'N/A',
                     'student_code' => $attempt->student->code ?? 'N/A',
+                    'student_email' => $attempt->student->email ?? '',
                     'out_of_screen_time' => $attempt->out_of_screen_time,
                     'cheat_warnings' => $attempt->cheat_warnings,
-                    'started_at' => $attempt->started_at->format('H:i:s'),
+                    'started_at' => $attempt->started_at ? $attempt->started_at->format('H:i:s') : 'N/A',
+                    'last_event' => $lastLog ? $lastLog->event_info['title'] : null,
+                    'last_event_time' => $lastLog && $lastLog->occurred_at ? $lastLog->occurred_at->format('H:i:s') : null,
                 ];
             });
 
         return response()->json(['attempts' => $attempts]);
+    }
+
+    public function studentBehavior(Exam $exam, ExamAttempt $attempt)
+    {
+        if ($exam->created_by !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($attempt->exam_id !== $exam->id) {
+            return response()->json(['error' => 'Invalid attempt for this exam'], 404);
+        }
+
+        $attempt->load(['student', 'antiCheatLogs' => function($q) {
+            $q->orderBy('occurred_at', 'desc');
+        }]);
+
+        $student = $attempt->student;
+        $logs = $attempt->antiCheatLogs->map(function ($log) {
+            $info = $log->event_info;
+            return [
+                'id' => $log->id,
+                'event_type' => $log->event_type,
+                'title' => $info['title'],
+                'description' => $info['description'],
+                'badge' => $info['badge'],
+                'icon' => $info['icon'],
+                'severity' => $info['severity'],
+                'duration_seconds' => $log->duration_seconds,
+                'ip_address' => $log->ip_address,
+                'occurred_at' => $log->occurred_at ? $log->occurred_at->format('H:i:s d/m/Y') : null,
+                'occurred_time' => $log->occurred_at ? $log->occurred_at->format('H:i:s') : null,
+                'time_diff' => $log->occurred_at ? $log->occurred_at->diffForHumans() : null,
+                'event_data' => $log->event_data,
+            ];
+        });
+
+        $stats = [
+            'total_logs' => $logs->count(),
+            'cheat_warnings' => $attempt->cheat_warnings,
+            'out_of_screen_time' => $attempt->out_of_screen_time,
+            'fullscreen_exits' => $logs->where('event_type', 'fullscreen_exit')->count(),
+            'tab_switches' => $logs->whereIn('event_type', ['tab_switch', 'window_blur'])->count(),
+            'copy_pastes' => $logs->whereIn('event_type', ['copy', 'paste', 'cut'])->count(),
+            'right_clicks' => $logs->where('event_type', 'right_click')->count(),
+        ];
+
+        return response()->json([
+            'student' => [
+                'id' => $student->id ?? null,
+                'name' => $student->name ?? 'N/A',
+                'code' => $student->code ?? 'N/A',
+                'email' => $student->email ?? 'N/A',
+                'initial' => mb_substr($student->name ?? '?', 0, 1, 'UTF-8'),
+            ],
+            'attempt' => [
+                'id' => $attempt->id,
+                'status' => $attempt->status,
+                'status_text' => $attempt->status === 'submitted' ? 'Đã nộp bài' : ($attempt->status === 'in_progress' ? 'Đang làm bài' : 'Chưa hoàn thành'),
+                'score' => $attempt->score_value,
+                'started_at' => $attempt->started_at ? $attempt->started_at->format('H:i:s d/m/Y') : 'N/A',
+                'submitted_at' => $attempt->submitted_at ? $attempt->submitted_at->format('H:i:s d/m/Y') : null,
+                'correct_answers' => $attempt->correct_answers,
+                'wrong_answers' => $attempt->wrong_answers,
+                'unanswered' => $attempt->unanswered,
+                'cheat_warnings' => $attempt->cheat_warnings,
+                'out_of_screen_time' => $attempt->out_of_screen_time,
+            ],
+            'stats' => $stats,
+            'logs' => $logs,
+        ]);
     }
 }

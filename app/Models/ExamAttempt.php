@@ -44,4 +44,9 @@ class ExamAttempt extends Model
     {
         return $this->hasMany(ExamAnswer::class, 'attempt_id');
     }
+
+    public function antiCheatLogs()
+    {
+        return $this->hasMany(AntiCheatLog::class, 'attempt_id')->orderBy('occurred_at', 'desc');
+    }
 }

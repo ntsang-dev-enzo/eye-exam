@@ -21,6 +21,11 @@ class Subject extends Model
         return $this->hasMany(Question::class);
     }
 
+    public function categories()
+    {
+        return $this->hasMany(Category::class);
+    }
+
     public function teachers()
     {
         return $this->belongsToMany(User::class)->withTimestamps();

@@ -11,6 +11,7 @@ class Exam extends Model
 
     protected $fillable = [
         'subject_id',
+        'category_id',
         'created_by',
         'code',
         'title',
@@ -24,6 +25,12 @@ class Exam extends Model
         'allow_review',
         'shuffle_questions',
         'shuffle_answers',
+        'enable_anti_cheat',
+        'require_fullscreen',
+        'prevent_tab_switch',
+        'prevent_copy_paste',
+        'prevent_right_click',
+        'prevent_screen_capture',
     ];
 
     protected $casts = [
@@ -31,16 +38,43 @@ class Exam extends Model
         'end_at' => 'datetime',
         'shuffle_questions' => 'boolean',
         'shuffle_answers' => 'boolean',
+        'allow_review' => 'boolean',
+        'enable_anti_cheat' => 'boolean',
+        'require_fullscreen' => 'boolean',
+        'prevent_tab_switch' => 'boolean',
+        'prevent_copy_paste' => 'boolean',
+        'prevent_right_click' => 'boolean',
+        'prevent_screen_capture' => 'boolean',
     ];
+
+    public function isUnlimitedAttempts(): bool
+    {
+        return empty($this->max_attempts) || $this->max_attempts <= 0;
+    }
 
     public function subject()
     {
         return $this->belongsTo(Subject::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(ExamAssignment::class);
+    }
+
+    public function attempts()
+    {
+        return $this->hasMany(ExamAttempt::class);
     }
 
     public function questions()

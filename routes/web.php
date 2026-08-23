@@ -12,6 +12,7 @@ use App\Http\Controllers\Teacher\ExamController as TeacherExamController;
 use App\Http\Controllers\Teacher\ClassController as TeacherClassController;
 use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\Teacher\CategoryController as TeacherCategoryController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
@@ -66,23 +67,36 @@ Route::middleware('auth')->group(function () {
         // Questions API
         Route::get('/api/cau-hoi', [TeacherQuestionController::class, 'apiIndex'])->name('api.questions.index');
         Route::post('/api/cau-hoi', [TeacherQuestionController::class, 'apiStore'])->name('api.questions.store');
+        Route::get('/api/danh-muc', [TeacherQuestionController::class, 'apiCategories'])->name('api.categories.index');
+        Route::post('/api/danh-muc', [TeacherQuestionController::class, 'apiCategoryStore'])->name('api.categories.store');
         
+        // Categories (Danh mục môn học)
+        Route::get('/danh-muc-mon-hoc', [TeacherCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/danh-muc-mon-hoc', [TeacherCategoryController::class, 'store'])->name('categories.store');
+        Route::put('/danh-muc-mon-hoc/{category}', [TeacherCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/danh-muc-mon-hoc/{category}', [TeacherCategoryController::class, 'destroy'])->name('categories.destroy');
+
         // Questions
         Route::get('/cau-hoi', [TeacherQuestionController::class, 'index'])->name('questions.index');
         Route::get('/cau-hoi/tao-moi', [TeacherQuestionController::class, 'create'])->name('questions.create');
         Route::post('/cau-hoi', [TeacherQuestionController::class, 'store'])->name('questions.store');
+        Route::post('/cau-hoi/chuyen-danh-muc', [TeacherQuestionController::class, 'bulkAssignCategory'])->name('questions.bulk-category');
+        Route::get('/cau-hoi/{question}/sua', [TeacherQuestionController::class, 'edit'])->name('questions.edit');
+        Route::put('/cau-hoi/{question}', [TeacherQuestionController::class, 'update'])->name('questions.update');
+        Route::delete('/cau-hoi/{question}', [TeacherQuestionController::class, 'destroy'])->name('questions.destroy');
         
         // Exams
-
         Route::get('/de-thi', [\App\Http\Controllers\Teacher\ExamController::class, 'index'])->name('exams.index');
         Route::get('/de-thi/tao-moi', [\App\Http\Controllers\Teacher\ExamController::class, 'create'])->name('exams.create');
         Route::post('/de-thi', [\App\Http\Controllers\Teacher\ExamController::class, 'store'])->name('exams.store');
         Route::get('/de-thi/{exam}/sua', [\App\Http\Controllers\Teacher\ExamController::class, 'edit'])->name('exams.edit');
         Route::put('/de-thi/{exam}', [\App\Http\Controllers\Teacher\ExamController::class, 'update'])->name('exams.update');
+        Route::delete('/de-thi/{exam}', [\App\Http\Controllers\Teacher\ExamController::class, 'destroy'])->name('exams.destroy');
         Route::patch('/de-thi/{exam}/trang-thai', [\App\Http\Controllers\Teacher\ExamController::class, 'updateStatus'])->name('exams.update-status');
         Route::get('/de-thi/{exam}/ket-qua', [\App\Http\Controllers\Teacher\ExamController::class, 'results'])->name('exams.results');
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Teacher\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
+        Route::get('/de-thi/{exam}/sinh-vien/{attempt}/hanh-vi', [\App\Http\Controllers\Teacher\ExamController::class, 'studentBehavior'])->name('exams.student-behavior');
 
         // Classes
         Route::get('/lop-hoc', [TeacherClassController::class, 'index'])->name('classes.index');
@@ -105,6 +119,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi/{exam}/lam-bai', [\App\Http\Controllers\Student\ExamController::class, 'take'])->name('exams.take');
         Route::post('/de-thi/{exam}/nop-bai', [\App\Http\Controllers\Student\ExamController::class, 'submit'])->name('exams.submit');
         Route::post('/attempt/{attempt}/cheat', [\App\Http\Controllers\Student\ExamController::class, 'cheat'])->name('exams.cheat');
+        Route::post('/attempt/{attempt}/save-answer', [\App\Http\Controllers\Student\ExamController::class, 'saveAnswer'])->name('exams.save-answer');
+        Route::post('/attempt/{attempt}/sync-offline', [\App\Http\Controllers\Student\ExamController::class, 'syncOffline'])->name('exams.sync-offline');
         Route::get('/de-thi/{exam}/xem-lai', [\App\Http\Controllers\Student\ExamController::class, 'review'])->name('exams.review');
 
 

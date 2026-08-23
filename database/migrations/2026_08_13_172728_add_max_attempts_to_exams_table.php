@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('exams', function (Blueprint $table) {
-            $table->integer('max_attempts')->default(1)->after('duration_minutes');
+            $table->integer('max_attempts')->nullable()->default(1)->after('duration_minutes');
         });
     }
 

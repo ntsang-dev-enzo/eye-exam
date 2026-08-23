@@ -40,6 +40,17 @@
                         @endforeach
                     </select>
 
+                    @if(isset($categories) && $categories->count() > 0)
+                        <select name="category_id" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 max-w-xs" onchange="this.form.submit()">
+                            <option value="">-- Tất cả danh mục --</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
+                                    {{ $cat->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+
                     <select name="status" class="text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
                         <option value="">-- Tất cả trạng thái --</option>
                         <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Mở</option>
@@ -55,8 +66,9 @@
         </div>
 
         @if(session('success'))
-            <div class="m-6 p-4 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-                {{ session('success') }}
+            <div class="m-6 p-4 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-2">
+                <svg class="w-5 h-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
 
@@ -76,15 +88,20 @@
                     @forelse($exams as $exam)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 mb-1">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700">{{ $exam->code }}</span>
                                     <p class="text-sm font-bold text-gray-900">{{ $exam->title }}</p>
+                                    @if($exam->category)
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                            {{ $exam->category->name }}
+                                        </span>
+                                    @endif
                                 </div>
                                 <p class="text-xs text-gray-500">Môn: <span class="font-medium">{{ $exam->subject->name ?? 'N/A' }}</span></p>
                             </td>
                             <td class="px-6 py-4">
                                 <p class="text-sm text-gray-700 font-medium">{{ $exam->total_questions }} câu hỏi</p>
-                                <p class="text-xs text-gray-500 mt-1">Làm bài: <span class="font-medium text-blue-600">{{ $exam->duration_minutes }} phút</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Làm bài: <span class="font-semibold text-blue-600">{{ $exam->duration_minutes }} phút</span></p>
                             </td>
                             <td class="px-6 py-4 ">
                                 @if($exam->start_at || $exam->end_at)
@@ -109,8 +126,8 @@
                                 </form>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xem điểm">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xem kết quả">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                                     </a>
                                     <a href="{{ route('teacher.exams.edit', $exam) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="Sửa đề thi">
@@ -119,6 +136,13 @@
                                     <a href="{{ route('teacher.exams.monitor', $exam) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors" title="Giám sát phòng thi">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
+                                    <!-- Nút Xóa đề thi -->
+                                    <button type="button" 
+                                            onclick="confirmDeleteExam('{{ route('teacher.exams.destroy', $exam) }}', '{{ addslashes($exam->title) }}', '{{ $exam->code }}')" 
+                                            class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors" 
+                                            title="Xóa đề thi">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -137,4 +161,48 @@
             {{ $exams->links() }}
         </div>
     </div>
+
+    <!-- Modal Xác nhận Xóa đề thi -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onclick="closeDeleteModal()"></div>
+        <div class="flex items-center justify-center min-h-screen px-4 text-center sm:p-0">
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-md w-full p-6 space-y-4">
+                <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-bold text-gray-900">Xác nhận xóa đề thi</h3>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Bạn có chắc chắn muốn xóa đề thi <span id="deleteExamTitle" class="font-bold text-gray-800"></span> (<span id="deleteExamCode" class="font-mono font-semibold text-blue-600"></span>)?
+                    </p>
+                    <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100 mt-3 text-left">
+                        ⚠️ Cảnh báo: Thao tác này sẽ xóa toàn bộ câu hỏi trong đề thi, lượt làm bài và kết quả thi của sinh viên thuộc đề này. Hành động này không thể hoàn tác!
+                    </p>
+                </div>
+                <form id="deleteExamForm" method="POST" class="pt-3 flex gap-3">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" onclick="closeDeleteModal()" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium text-sm rounded-xl hover:bg-gray-200 transition-colors">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-rose-600 text-white font-medium text-sm rounded-xl hover:bg-rose-700 transition-colors shadow-sm shadow-rose-200">
+                        Đồng ý xóa
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function confirmDeleteExam(deleteUrl, examTitle, examCode) {
+            document.getElementById('deleteExamForm').action = deleteUrl;
+            document.getElementById('deleteExamTitle').textContent = `"${examTitle}"`;
+            document.getElementById('deleteExamCode').textContent = examCode;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+    </script>
 @endsection

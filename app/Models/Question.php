@@ -11,6 +11,7 @@ class Question extends Model
 
     protected $fillable = [
         'subject_id',
+        'category_id',
         'created_by',
         'content',
         'type',
@@ -22,6 +23,11 @@ class Question extends Model
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function creator()

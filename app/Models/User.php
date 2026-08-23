@@ -58,4 +58,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Subject::class)->withTimestamps();
     }
+
+    public function examAttempts()
+    {
+        return $this->hasMany(ExamAttempt::class, 'student_id');
+    }
+
+    public function antiCheatLogs()
+    {
+        return $this->hasMany(AntiCheatLog::class, 'student_id')->orderBy('occurred_at', 'desc');
+    }
 }

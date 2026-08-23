@@ -7,7 +7,7 @@
         <div class="flex items-center gap-2 mb-2">
             <a href="{{ route('teacher.questions.index') }}" class="text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">Ngân hàng câu hỏi</a>
             <span class="text-gray-400">/</span>
-            <span class="text-sm font-medium text-gray-900">Sửa câu hỏi</span>
+            <span class="text-sm font-medium text-gray-900">Sửa câu hỏi #{{ $question->id }}</span>
         </div>
 
         <form action="{{ route('teacher.questions.update', $question) }}" method="POST" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
@@ -24,16 +24,35 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Subject -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Môn học <span class="text-red-500">*</span></label>
-                    <select name="subject_id" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                    <select name="subject_id" id="subject_id" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
                         <option value="">-- Chọn môn học --</option>
                         @foreach($subjects as $subject)
                             <option value="{{ $subject->id }}" {{ old('subject_id', $question->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
                         @endforeach
                     </select>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">Danh mục / Chuyên đề</label>
+                        <button type="button" id="btnToggleNewCat" class="text-xs text-blue-600 font-semibold hover:underline">+ Tạo mới</button>
+                    </div>
+                    <select name="category_id" id="category_id" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                        <option value="">-- Chưa phân loại --</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" data-subject="{{ $category->subject_id }}" {{ old('category_id', $question->category_id) == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div id="newCategoryWrapper" class="hidden mt-2">
+                        <input type="text" name="new_category_name" id="new_category_name" placeholder="Nhập tên danh mục mới..." class="w-full rounded-xl border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500 px-3 py-1.5 bg-emerald-50/50 text-xs">
+                    </div>
                 </div>
                 
                 <!-- Type -->
@@ -91,7 +110,6 @@
                             $correctIndex = $oldCorrect;
                         }
                         
-                        // Ensure at least 4 answers fields
                         $answersCount = max(count($answers), 4);
                     @endphp
 
@@ -144,6 +162,35 @@
             const mcSection = document.getElementById('multipleChoiceSection');
             const addAnswerBtn = document.getElementById('addAnswerBtn');
             const answersList = document.getElementById('answersList');
+            const subjectSelect = document.getElementById('subject_id');
+            const catSelect = document.getElementById('category_id');
+            const btnToggleNewCat = document.getElementById('btnToggleNewCat');
+            const newCategoryWrapper = document.getElementById('newCategoryWrapper');
+
+            // Filter category by subject
+            function filterCategories() {
+                const subjId = subjectSelect.value;
+                Array.from(catSelect.options).forEach(opt => {
+                    if (!opt.value) return;
+                    const optSubj = opt.getAttribute('data-subject');
+                    if (!optSubj || optSubj === subjId) {
+                        opt.style.display = 'block';
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+            }
+            subjectSelect.addEventListener('change', filterCategories);
+            filterCategories();
+
+            // Toggle new category input
+            btnToggleNewCat.addEventListener('click', function() {
+                newCategoryWrapper.classList.toggle('hidden');
+                if (!newCategoryWrapper.classList.contains('hidden')) {
+                    document.getElementById('new_category_name').focus();
+                    catSelect.value = "";
+                }
+            });
 
             // Toggle MC section based on type
             function toggleMC() {
@@ -155,7 +202,6 @@
             }
 
             typeSelect.addEventListener('change', toggleMC);
-            // Already toggled by inline style, but bind event for changes
             
             // Update labels A, B, C, D...
             window.updateLabels = function() {
