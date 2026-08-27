@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SubjectController as AdminSubjectController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\QuestionController as TeacherQuestionController;
 use App\Http\Controllers\Teacher\ExamController as TeacherExamController;
@@ -27,6 +28,9 @@ Route::middleware('auth')->group(function () {
     // Admin routes (Protected by role:admin)
     Route::prefix('admin')->middleware('role:admin')->name('admin.')->group(function () {
         Route::get('/tong-quan', [AdminDashboardController::class, 'index'])->name('dashboard');
+        
+        // User Account Management
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         
         // Subjects
         Route::get('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('subjects.index');

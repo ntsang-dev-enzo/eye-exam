@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE `classes` MODIFY COLUMN `status` VARCHAR(255) NOT NULL DEFAULT 'active'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE `classes` MODIFY COLUMN `status` VARCHAR(255) NOT NULL DEFAULT 'active'");
+        }
     }
 
     /**
@@ -20,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE `classes` MODIFY COLUMN `status` TINYINT(1) NOT NULL DEFAULT 1");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE `classes` MODIFY COLUMN `status` TINYINT(1) NOT NULL DEFAULT 1");
+        }
     }
 };
