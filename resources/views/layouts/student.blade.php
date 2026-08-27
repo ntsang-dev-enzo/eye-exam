@@ -36,44 +36,37 @@
                 <svg class="w-5 h-5 {{ request()->routeIs('student.dashboard') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                 Tổng quan
             </a>
-<<<<<<< HEAD
-            <a href="{{ route('student.exams.index') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.exams.index') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
-                <svg class="w-5 h-5 {{ request()->routeIs('student.exams.index') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                Kỳ thi của tôi
-=======
             <a href="{{ route('student.classes.index') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.classes.*') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                 <svg class="w-5 h-5 {{ request()->routeIs('student.classes.*') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 v5m-4 0h4"></path></svg>
                 Lớp học của tôi
->>>>>>> 4931ee1 (quản lí lớp học admin, trang lớp cho sinh viên vaf giảng viên, điểm danh cho giảng viên)
             </a>
             <a href="{{ route('student.khoa-hoc.index') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.khoa-hoc.*') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                 <svg class="w-5 h-5 {{ request()->routeIs('student.khoa-hoc.*') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                 Khóa học & Môn học
             </a>
-<<<<<<< HEAD
-            <a href="#" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                Kết quả học tập
-=======
             <a href="{{ route('student.exams.index') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.exams.*') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                 <svg class="w-5 h-5 {{ request()->routeIs('student.exams.*') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                 Kỳ thi của tôi
->>>>>>> 4931ee1 (quản lí lớp học admin, trang lớp cho sinh viên vaf giảng viên, điểm danh cho giảng viên)
+            </a>
+            <a href="{{ route('student.profile') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.profile') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 {{ request()->routeIs('student.profile') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                Thông tin sinh viên
             </a>
         </nav>
 
         <!-- User profile in sidebar -->
         <div class="p-4 border-t border-gray-50 shrink-0">
-            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100/50">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold shadow-inner shrink-0">
-                    {{ substr(auth()->user()->name, 0, 1) }}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-bold text-gray-900 truncate">{{ auth()->user()->name }}</p>
-                    <p class="text-xs text-gray-500 truncate">{{ auth()->user()->code ?? 'Sinh viên' }}</p>
-                </div>
+            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100/50 transition-colors">
+                <a href="{{ route('student.profile') }}" class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold shadow-inner shrink-0">
+                        {{ substr(auth()->user()->name, 0, 1) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-gray-900 truncate hover:text-indigo-600 transition-colors">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ auth()->user()->code ?? 'Sinh viên' }}</p>
+                    </div>
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="flex-shrink-0">
-
                     @csrf
                     <button type="submit" class="p-2 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-100 transition-colors" title="Đăng xuất">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
