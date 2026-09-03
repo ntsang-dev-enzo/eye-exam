@@ -4,6 +4,7 @@ Integrated with InsightFace (ArcFace 512D) and YOLOv8
 """
 
 import os
+import sys
 import io
 import re
 import base64
@@ -11,6 +12,36 @@ import json
 import numpy as np
 import cv2
 from PIL import Image
+
+# -------------------------------------------------------------
+# Configure Windows DLL Search Paths for NVIDIA CUDA / cuDNN
+# -------------------------------------------------------------
+if sys.platform == 'win32':
+    try:
+        site_packages = [p for p in sys.path if 'site-packages' in p]
+        for sp in site_packages:
+            nv_dir = os.path.join(sp, 'nvidia')
+            if os.path.exists(nv_dir):
+                for root, _, files in os.walk(nv_dir):
+                    if any(f.endswith('.dll') for f in files):
+                        os.environ['PATH'] = root + os.pathsep + os.environ['PATH']
+                        if hasattr(os, 'add_dll_directory'):
+                            try:
+                                os.add_dll_directory(root)
+                            except Exception:
+                                pass
+            torch_lib = os.path.join(sp, 'torch', 'lib')
+            if os.path.exists(torch_lib):
+                os.environ['PATH'] = torch_lib + os.pathsep + os.environ['PATH']
+                if hasattr(os, 'add_dll_directory'):
+                    try:
+                        os.add_dll_directory(torch_lib)
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"[Warning] Failed to configure CUDA DLL paths: {e}")
+
+import torch
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from insightface.app import FaceAnalysis
@@ -20,12 +51,37 @@ app = Flask(__name__)
 CORS(app)
 
 # -------------------------------------------------------------
-# Initialize Models
+# Detect and Initialize NVIDIA GPU
+# -------------------------------------------------------------
+USE_CUDA = torch.cuda.is_available()
+if USE_CUDA:
+    GPU_NAME = torch.cuda.get_device_name(0)
+    GPU_PROPS = torch.cuda.get_device_properties(0)
+    TOTAL_VRAM_GB = round(GPU_PROPS.total_memory / (1024**3), 2)
+    print("============================================================")
+    print(f"==> [NVIDIA GPU] Detected: {GPU_NAME}")
+    print(f"==> [NVIDIA GPU] Total VRAM: {TOTAL_VRAM_GB} GB | CUDA: {torch.version.cuda}")
+    print("============================================================")
+    providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+    ctx_id = 0
+    YOLO_DEVICE = 'cuda:0'
+else:
+    GPU_NAME = "CPU"
+    TOTAL_VRAM_GB = 0
+    print("==> [Notice] No NVIDIA GPU detected with CUDA. Falling back to CPU.")
+    providers = ['CPUExecutionProvider']
+    ctx_id = -1
+    YOLO_DEVICE = 'cpu'
+
+# -------------------------------------------------------------
+# Initialize Models on GPU
 # -------------------------------------------------------------
 print("==> Loading InsightFace (ArcFace)...")
-face_app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider'])
-face_app.prepare(ctx_id=0, det_size=(320, 320))
-print("==> InsightFace (ArcFace) loaded successfully!")
+face_app = FaceAnalysis(name='buffalo_sc', providers=providers)
+face_app.prepare(ctx_id=ctx_id, det_size=(320, 320))
+active_face_providers = [getattr(m, 'session', None).get_providers()[0] for m in face_app.models.values() if hasattr(m, 'session')]
+face_ep = active_face_providers[0] if active_face_providers else ('CUDAExecutionProvider' if USE_CUDA else 'CPUExecutionProvider')
+print(f"==> InsightFace (ArcFace) loaded successfully on {face_ep}!")
 
 # Move yolov8n.pt to script directory or current working dir
 yolo_path = os.path.join(os.path.dirname(__file__), '..', 'yolov8n.pt')
@@ -34,7 +90,11 @@ if not os.path.exists(yolo_path):
 
 print(f"==> Loading YOLOv8 model from {yolo_path}...")
 yolo_model = YOLO(yolo_path)
-print("==> YOLOv8 loaded successfully!")
+if USE_CUDA:
+    yolo_model.to('cuda')
+    print(f"==> YOLOv8 moved to NVIDIA GPU ({yolo_model.device}) successfully!")
+else:
+    print("==> YOLOv8 loaded successfully on CPU!")
 
 # Target COCO Classes for anti-cheat
 # 0: person, 67: cell phone, 73: book, 63: laptop
@@ -73,9 +133,22 @@ def health():
     return jsonify({
         'status': 'healthy',
         'service': 'Eye-Exam AI Proctoring',
+        'acceleration': f'NVIDIA GPU ({GPU_NAME})' if USE_CUDA else 'CPU',
+        'gpu': {
+            'cuda_available': USE_CUDA,
+            'device_name': GPU_NAME if USE_CUDA else None,
+            'vram_total_gb': TOTAL_VRAM_GB if USE_CUDA else None,
+            'vram_allocated_mb': round(torch.cuda.memory_allocated(0) / (1024**2), 2) if USE_CUDA else None,
+        },
         'models': {
-            'face_recognition': 'InsightFace ArcFace 512D',
-            'object_detection': 'YOLOv8n'
+            'face_recognition': {
+                'name': 'InsightFace ArcFace 512D',
+                'provider': face_ep
+            },
+            'object_detection': {
+                'name': 'YOLOv8n',
+                'device': str(yolo_model.device)
+            }
         }
     })
 
@@ -167,7 +240,7 @@ def verify_face():
     # -------------------------------------------------------------
     # 0. YOLOv8 Object & Person Detection ("vừa YOLO phân tích")
     # -------------------------------------------------------------
-    yolo_results = yolo_model(img_bgr, conf=0.35, verbose=False)[0]
+    yolo_results = yolo_model(img_bgr, conf=0.35, device=YOLO_DEVICE, verbose=False)[0]
     person_count = 0
     phone_detected = False
     yolo_detections = []
@@ -426,7 +499,7 @@ def analyze_proctor_snapshot():
     # -------------------------------------------------------------
     # 1. YOLOv8 Object Detection
     # -------------------------------------------------------------
-    results = yolo_model(img_bgr, conf=0.35, verbose=False)[0]
+    results = yolo_model(img_bgr, conf=0.35, device=YOLO_DEVICE, verbose=False)[0]
     detections = []
     person_boxes = []
     phone_boxes = []
