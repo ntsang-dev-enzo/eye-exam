@@ -118,14 +118,21 @@
                                     Tiếp tục làm bài
                                 </a>
                             @elseif($exam->can_take)
-                                <form action="{{ route('student.exams.join') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="code" value="{{ $exam->code }}">
-                                    <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                        {{ $exam->submitted_count > 0 ? 'Thi lại (Lần ' . ($exam->submitted_count + 1) . ')' : 'Làm bài ngay' }}
+                                @if($exam->require_face_verification)
+                                    <button type="button" onclick="openFaceVerifyModal({{ $exam->id }}, '{{ addslashes($exam->title) }}')" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                        <span>{{ $exam->submitted_count > 0 ? 'Xác thực & Thi lại (Lần ' . ($exam->submitted_count + 1) . ')' : 'Xác thực khuôn mặt & Vào thi' }}</span>
                                     </button>
-                                </form>
+                                @else
+                                    <form action="{{ route('student.exams.join') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="code" value="{{ $exam->code }}">
+                                        <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                            {{ $exam->submitted_count > 0 ? 'Thi lại (Lần ' . ($exam->submitted_count + 1) . ')' : 'Làm bài ngay' }}
+                                        </button>
+                                    </form>
+                                @endif
                             @elseif($exam->calculated_status === 'Sắp thi')
                                 <button disabled class="w-full py-2.5 px-4 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed text-center border border-slate-200">
                                     Chưa đến giờ thi
@@ -182,4 +189,6 @@
         });
     }
 </script>
+
+@include('student.exams.partials.face_verify_modal')
 @endsection

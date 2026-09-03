@@ -48,6 +48,15 @@
                 <svg class="w-5 h-5 {{ request()->routeIs('student.exams.*') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                 Kỳ thi của tôi
             </a>
+            @if(auth()->user() && !auth()->user()->face_registered)
+            <a href="{{ route('student.face.register') }}" class="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.face.*') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 {{ request()->routeIs('student.face.*') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Đăng ký Face ID</span>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping" title="Cần đăng ký"></span>
+            </a>
+            @endif
             <a href="{{ route('student.profile') }}" class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('student.profile') ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                 <svg class="w-5 h-5 {{ request()->routeIs('student.profile') ? 'text-indigo-600' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                 Thông tin sinh viên
@@ -58,8 +67,12 @@
         <div class="p-4 border-t border-gray-50 shrink-0">
             <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100/50 transition-colors">
                 <a href="{{ route('student.profile') }}" class="flex items-center gap-3 flex-1 min-w-0">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold shadow-inner shrink-0">
-                        {{ substr(auth()->user()->name, 0, 1) }}
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold shadow-inner shrink-0 overflow-hidden border border-indigo-200">
+                        @if(auth()->user()->frontal_face_url)
+                            <img src="{{ auth()->user()->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
+                        @else
+                            {{ substr(auth()->user()->name, 0, 1) }}
+                        @endif
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-bold text-gray-900 truncate hover:text-indigo-600 transition-colors">{{ auth()->user()->name }}</p>
@@ -124,6 +137,7 @@
             </footer>
         </main>
     </div>
+    @stack('scripts')
 </body>
 </html>
  

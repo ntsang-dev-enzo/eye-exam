@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
         
         // User Account Management
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/users/{user}/reset-face', [AdminUserController::class, 'resetFaceId'])->name('users.reset-face');
         
         // Subjects
         Route::get('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('subjects.index');
@@ -119,8 +120,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/khoa-hoc-cua-toi', [TeacherCourseController::class, 'index'])->name('khoa-hoc.index');
     });
 
-    // Student routes
-    Route::prefix('sinh-vien')->name('student.')->middleware([\App\Http\Middleware\CheckActiveExam::class])->group(function () {
+    // Student routes (Protected by role:student)
+    Route::prefix('sinh-vien')->name('student.')->middleware(['role:student', \App\Http\Middleware\CheckActiveExam::class])->group(function () {
         Route::get('/tong-quan', [\App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
         
         Route::get('/ky-thi-cua-toi', [\App\Http\Controllers\Student\ExamController::class, 'index'])->name('exams.index');
@@ -132,6 +133,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/attempt/{attempt}/sync-offline', [\App\Http\Controllers\Student\ExamController::class, 'syncOffline'])->name('exams.sync-offline');
         Route::get('/de-thi/{exam}/xem-lai', [\App\Http\Controllers\Student\ExamController::class, 'review'])->name('exams.review');
 
+        // Face ID & AI Proctoring routes
+        Route::get('/dang-ky-khuon-mat', [\App\Http\Controllers\Student\FaceAuthController::class, 'showRegister'])->name('face.register');
+        Route::post('/dang-ky-khuon-mat', [\App\Http\Controllers\Student\FaceAuthController::class, 'storeRegister'])->name('face.register.store');
+        Route::post('/de-thi/{exam}/xac-thuc-khuon-mat', [\App\Http\Controllers\Student\FaceAuthController::class, 'verifyFace'])->name('exams.verify-face');
+        Route::post('/attempt/{attempt}/proctor-snapshot', [\App\Http\Controllers\Student\ExamController::class, 'captureProctorSnapshot'])->name('exams.proctor-snapshot');
+
         // Student Classes View
         Route::get('/lop-hoc-cua-toi', [\App\Http\Controllers\Student\ClassController::class, 'index'])->name('classes.index');
         Route::get('/lop-hoc-cua-toi/{class}', [\App\Http\Controllers\Student\ClassController::class, 'show'])->name('classes.show');
@@ -141,5 +148,15 @@ Route::middleware('auth')->group(function () {
 
         // Student Profile (Thông tin sinh viên)
         Route::get('/thong-tin', [\App\Http\Controllers\Student\ProfileController::class, 'index'])->name('profile');
+    });
+
+    // =========================================================
+    // SECURE ENCRYPTED MEDIA STREAMING (ROLE-BASED AUTHORIZATION)
+    // =========================================================
+    Route::prefix('secure-media')->name('secure.media.')->group(function () {
+        Route::get('/snapshot/{snapshot}', [\App\Http\Controllers\SecureMediaController::class, 'streamSnapshot'])->name('snapshot');
+        Route::get('/verification/{attempt}', [\App\Http\Controllers\SecureMediaController::class, 'streamVerification'])->name('verification');
+        Route::get('/face/{targetUser}', [\App\Http\Controllers\SecureMediaController::class, 'streamFace'])->name('face');
+        Route::get('/log/{log}', [\App\Http\Controllers\SecureMediaController::class, 'streamLogSnapshot'])->name('log');
     });
 });

@@ -11,6 +11,7 @@ class AntiCheatLog extends Model
         'student_id',
         'event_type',
         'event_data',
+        'snapshot_path',
         'duration_seconds',
         'ip_address',
         'user_agent',
@@ -129,6 +130,72 @@ class AntiCheatLog extends Model
                     'icon' => 'connection_restored',
                     'severity' => 'low'
                 ];
+            case 'phone_detected':
+                return [
+                    'title' => 'Phát hiện điện thoại di động',
+                    'description' => 'AI (YOLO) phát hiện thiết bị điện thoại trong khung hình camera.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'smartphone',
+                    'severity' => 'high'
+                ];
+            case 'multiple_persons':
+                return [
+                    'title' => 'Phát hiện nhiều người trước camera',
+                    'description' => 'AI phát hiện nhiều người cùng xuất hiện trong không gian thi.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'group',
+                    'severity' => 'high'
+                ];
+            case 'face_absent':
+                return [
+                    'title' => 'Không có thí sinh trước màn hình',
+                    'description' => 'Camera không phát hiện thấy thí sinh ngồi trước màn hình.',
+                    'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
+                    'icon' => 'person_off',
+                    'severity' => 'high'
+                ];
+            case 'face_mismatch':
+                return [
+                    'title' => 'Khuôn mặt không trùng khớp (Nghi vấn thi hộ)',
+                    'description' => 'Độ tương đồng khuôn mặt qua ArcFace thấp hơn ngưỡng an toàn.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'face_retouching_off',
+                    'severity' => 'high'
+                ];
+            case 'looking_away':
+                $msg = is_array($this->event_data) ? ($this->event_data['summary'] ?? null) : null;
+                return [
+                    'title' => 'Quay mặt / Không nhìn trực diện màn hình',
+                    'description' => $msg ?: 'AI phát hiện thí sinh quay đầu sang trái, phải hoặc cúi nhìn xuống bất thường.',
+                    'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
+                    'icon' => 'visibility_off',
+                    'severity' => 'medium'
+                ];
+            case 'suspicious_device':
+                return [
+                    'title' => 'Phát hiện thiết bị máy tính phụ',
+                    'description' => 'AI phát hiện thiết bị laptop hoặc màn hình thứ hai trong khung hình.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'laptop',
+                    'severity' => 'high'
+                ];
+            case 'suspicious_object':
+                return [
+                    'title' => 'Phát hiện tài liệu / Sách vở',
+                    'description' => 'AI phát hiện sách vở hoặc tài liệu trong khung hình.',
+                    'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
+                    'icon' => 'menu_book',
+                    'severity' => 'medium'
+                ];
+            case 'proctor_violation':
+                $detail = is_array($this->event_data) ? ($this->event_data['summary'] ?? json_encode($this->event_data, JSON_UNESCAPED_UNICODE)) : (string) $this->event_data;
+                return [
+                    'title' => 'Cảnh báo giám sát AI: ' . ($this->event_data['violation_type'] ?? 'Hành vi bất thường'),
+                    'description' => $detail ?: 'Hệ thống AI giám sát phát hiện dấu hiệu bất thường.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'warning',
+                    'severity' => 'high'
+                ];
             default:
                 return [
                     'title' => 'Sự kiện vi phạm: ' . $this->event_type,
@@ -138,5 +205,16 @@ class AntiCheatLog extends Model
                     'severity' => 'medium'
                 ];
         }
+    }
+
+    public function getSnapshotUrlAttribute(): ?string
+    {
+        if (empty($this->snapshot_path)) {
+            return null;
+        }
+        if (str_starts_with($this->snapshot_path, 'http')) {
+            return $this->snapshot_path;
+        }
+        return route('secure.media.log', $this->id);
     }
 }

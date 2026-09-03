@@ -159,6 +159,22 @@
                                     <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Chặn phím PrtSc, Win+Shift+S, F12, Ctrl+P, Ctrl+U</span>
                                 </div>
                             </label>
+
+                            <label class="flex items-start p-3 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5">
+                                <input type="checkbox" name="require_face_verification" value="1" checked class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
+                                <div>
+                                    <span class="block text-xs font-bold text-indigo-900">Xác thực Khuôn mặt (Face ID ArcFace)</span>
+                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Bắt buộc quét khuôn mặt &ge; 70% trước khi cấp đề thi</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-3 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5">
+                                <input type="checkbox" name="enable_proctor_camera" value="1" checked class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
+                                <div>
+                                    <span class="block text-xs font-bold text-indigo-900">Giám sát Camera AI ngẫu nhiên (YOLO)</span>
+                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Chụp ngẫu nhiên 2 - 4 phút/lần phát hiện điện thoại & thi hộ</span>
+                                </div>
+                            </label>
                         </div>
                     </div>
 

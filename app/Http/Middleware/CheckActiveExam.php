@@ -23,7 +23,11 @@ class CheckActiveExam
                 'student.exams.submit',
                 'student.exams.cheat',
                 'student.exams.save-answer',
-                'student.exams.sync-offline'
+                'student.exams.sync-offline',
+                'student.exams.verify-face',
+                'student.exams.proctor-snapshot',
+                'student.face.register',
+                'student.face.register.store',
             ];
             
             if (!in_array($request->route()->getName(), $allowedRoutes)) {
@@ -34,8 +38,7 @@ class CheckActiveExam
                     ->first();
                     
                 if ($activeAttempt) {
-                    return redirect()->route('student.exams.take', $activeAttempt->exam_id)
-                        ->with('error', 'Bạn đang có bài thi dang dở, không thể rời khỏi trang lúc này!');
+                    return redirect()->route('student.exams.take', $activeAttempt->exam_id);
                 }
             }
         }

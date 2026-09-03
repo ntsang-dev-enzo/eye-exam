@@ -31,6 +31,9 @@ class Exam extends Model
         'prevent_copy_paste',
         'prevent_right_click',
         'prevent_screen_capture',
+        'require_face_verification',
+        'enable_proctor_camera',
+        'proctor_interval_seconds',
     ];
 
     protected $casts = [
@@ -45,6 +48,9 @@ class Exam extends Model
         'prevent_copy_paste' => 'boolean',
         'prevent_right_click' => 'boolean',
         'prevent_screen_capture' => 'boolean',
+        'require_face_verification' => 'boolean',
+        'enable_proctor_camera' => 'boolean',
+        'proctor_interval_seconds' => 'integer',
     ];
 
     public function isUnlimitedAttempts(): bool

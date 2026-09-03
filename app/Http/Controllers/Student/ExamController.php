@@ -140,6 +140,12 @@ class ExamController extends Controller
             }
         }
 
+        // Check if exam requires face verification and student has not registered yet
+        if ($exam->require_face_verification && !auth()->user()->face_registered) {
+            return redirect()->route('student.face.register')
+                ->with('error', 'Kỳ thi này yêu cầu xác thực khuôn mặt. Vui lòng đăng ký Face ID trước khi tham gia.');
+        }
+
         // Create new attempt
         ExamAttempt::create([
             'exam_id' => $exam->id,
@@ -517,5 +523,117 @@ class ExamController extends Controller
         $studentAnswers = $attempt->answers->keyBy('question_id');
 
         return view('student.exams.review', compact('exam', 'attempt', 'studentAnswers'));
+    }
+
+    public function captureProctorSnapshot(Request $request, $attemptId)
+    {
+        $attempt = ExamAttempt::with(['exam', 'student'])->where('id', $attemptId)
+            ->where('student_id', auth()->id())
+            ->where('status', 'in_progress')
+            ->first();
+
+        if (!$attempt) {
+            return response()->json(['error' => 'Phiên thi không hợp lệ.'], 404);
+        }
+
+        $imageB64 = $request->input('image');
+        if (empty($imageB64)) {
+            return response()->json(['error' => 'Không có dữ liệu ảnh.'], 400);
+        }
+
+        $student = $attempt->student;
+        $enrolledEmbedding = $student && !empty($student->face_embedding)
+            ? (is_string($student->face_embedding) ? json_decode($student->face_embedding, true) : $student->face_embedding)
+            : null;
+
+        // Call AI Service
+        $aiService = app(\App\Services\AiProctorService::class);
+        $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 70.0);
+
+        // Save encrypted image to private storage: storage/app/private/proctor/{attempt_id}/
+        $folder = "proctor/{$attempt->id}";
+        $data = $imageB64;
+        if (str_contains($data, ',')) {
+            $data = explode(',', $data)[1];
+        }
+        $binary = base64_decode($data);
+        $fileName = "{$folder}/snap_" . time() . "_" . \Illuminate\Support\Str::random(5) . ".enc";
+        \App\Services\SecureMediaService::storeEncrypted($fileName, $binary, 'local');
+
+        $status = $result['status'] ?? 'normal';
+        $violations = $result['violations'] ?? [];
+        $detections = $result['detections'] ?? [];
+        $faceSimilarity = $result['face_similarity'] ?? null;
+        $summary = $result['summary'] ?? '';
+        $personCount = $result['person_count'] ?? 1;
+
+        // Guaranteed log if 2 or more persons are detected
+        if ($personCount > 1) {
+            $hasMultiple = false;
+            foreach ($violations as $v) {
+                if (($v['type'] ?? '') === 'multiple_persons') {
+                    $hasMultiple = true;
+                    break;
+                }
+            }
+            if (!$hasMultiple) {
+                $violations[] = [
+                    'type' => 'multiple_persons',
+                    'severity' => 'high',
+                    'message' => "Phát hiện {$personCount} người trong khung hình camera (Có người trợ giúp)",
+                ];
+                $status = 'violation';
+            }
+        }
+
+        // Save ExamProctorSnapshot record
+        $snapshot = \App\Models\ExamProctorSnapshot::create([
+            'attempt_id' => $attempt->id,
+            'student_id' => $student->id,
+            'image_path' => $fileName,
+            'status' => $status,
+            'violations' => $violations,
+            'detections' => $detections,
+            'face_similarity' => $faceSimilarity,
+            'details' => $summary,
+            'captured_at' => now(),
+        ]);
+
+        // If violations detected, record in AntiCheatLog and increment warning counters
+        if ($status === 'violation' || !empty($violations)) {
+            $count = count($violations) > 0 ? count($violations) : 1;
+            $attempt->increment('cheat_warnings', $count);
+
+            foreach ($violations as $v) {
+                $rawType = $v['type'] ?? 'proctor_violation';
+                AntiCheatLog::create([
+                    'attempt_id' => $attempt->id,
+                    'student_id' => $student->id,
+                    'event_type' => $rawType,
+                    'event_data' => [
+                        'violation_type' => $rawType,
+                        'summary' => $v['message'] ?? $summary,
+                        'detections' => $detections,
+                        'similarity' => $faceSimilarity,
+                        'person_count' => $personCount,
+                        'snapshot_id' => $snapshot->id,
+                        'snapshot_url' => route('secure.media.snapshot', $snapshot->id),
+                    ],
+                    'snapshot_path' => $fileName,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'occurred_at' => now(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $status,
+            'violations' => $violations,
+            'summary' => $summary,
+            'cheat_warnings' => $attempt->cheat_warnings,
+            'captured_at' => now()->format('H:i:s'),
+        ]);
     }
 }

@@ -9,15 +9,31 @@
         <div class="absolute top-0 right-0 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-50 to-blue-50 opacity-50 blur-3xl pointer-events-none"></div>
         
         <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
-            <div class="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-5xl shadow-inner shrink-0 border-4 border-white shadow-lg">
-                {{ substr($user->name, 0, 1) }}
+            <div class="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-5xl shadow-inner shrink-0 border-4 border-white shadow-lg overflow-hidden">
+                @if($user->frontal_face_url)
+                    <img src="{{ $user->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ $user->name }}">
+                @else
+                    {{ substr($user->name, 0, 1) }}
+                @endif
             </div>
             <div class="text-center md:text-left">
-                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">{{ $user->name }}</h1>
-                <p class="text-lg text-gray-500 mb-4">{{ $user->email }}</p>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
-                    Sinh viên
-                </span>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-1">{{ $user->name }}</h1>
+                <p class="text-base text-gray-500 mb-3">{{ $user->email }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
+                        Sinh viên
+                    </span>
+                    @if($user->face_registered)
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="Khuôn mặt đã được mã hóa AES-256">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Face ID Đã mã hóa (AES-256)
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                            Chưa đăng ký Face ID
+                        </span>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

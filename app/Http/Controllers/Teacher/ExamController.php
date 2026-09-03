@@ -102,6 +102,9 @@ class ExamController extends Controller
             'prevent_copy_paste' => $enableAntiCheat && $request->has('prevent_copy_paste'),
             'prevent_right_click' => $enableAntiCheat && $request->has('prevent_right_click'),
             'prevent_screen_capture' => $enableAntiCheat && $request->has('prevent_screen_capture'),
+            'require_face_verification' => $enableAntiCheat && $request->has('require_face_verification'),
+            'enable_proctor_camera' => $enableAntiCheat && $request->has('enable_proctor_camera'),
+            'proctor_interval_seconds' => (int) ($request->proctor_interval_seconds ?? 180),
         ]);
 
         foreach ($request->questions as $index => $questionId) {
@@ -173,6 +176,9 @@ class ExamController extends Controller
             'prevent_copy_paste' => $enableAntiCheat && $request->has('prevent_copy_paste'),
             'prevent_right_click' => $enableAntiCheat && $request->has('prevent_right_click'),
             'prevent_screen_capture' => $enableAntiCheat && $request->has('prevent_screen_capture'),
+            'require_face_verification' => $enableAntiCheat && $request->has('require_face_verification'),
+            'enable_proctor_camera' => $enableAntiCheat && $request->has('enable_proctor_camera'),
+            'proctor_interval_seconds' => (int) ($request->proctor_interval_seconds ?? 180),
         ]);
 
         $syncData = [];
@@ -251,14 +257,22 @@ class ExamController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $attempts = ExamAttempt::with(['student', 'antiCheatLogs' => function($q) {
-                $q->latest('occurred_at')->limit(1);
-            }])
+        $attempts = ExamAttempt::with([
+                'student',
+                'antiCheatLogs' => function($q) {
+                    $q->latest('occurred_at')->limit(1);
+                },
+                'proctorSnapshots' => function($q) {
+                    $q->latest('captured_at')->limit(1);
+                }
+            ])
             ->where('exam_id', $exam->id)
             ->where('status', 'in_progress')
             ->get()
             ->map(function ($attempt) {
                 $lastLog = $attempt->antiCheatLogs->first();
+                $lastSnap = $attempt->proctorSnapshots->first();
+
                 return [
                     'id' => $attempt->id,
                     'student_name' => $attempt->student->name ?? 'N/A',
@@ -269,6 +283,12 @@ class ExamController extends Controller
                     'started_at' => $attempt->started_at ? $attempt->started_at->format('H:i:s') : 'N/A',
                     'last_event' => $lastLog ? $lastLog->event_info['title'] : null,
                     'last_event_time' => $lastLog && $lastLog->occurred_at ? $lastLog->occurred_at->format('H:i:s') : null,
+                    'face_verified' => (bool) $attempt->face_verified_at,
+                    'face_similarity' => $attempt->face_similarity,
+                    'verification_image_url' => $attempt->verification_image_url,
+                    'enrolled_image_url' => $attempt->student ? $attempt->student->frontal_face_url : null,
+                    'latest_snapshot_url' => $lastSnap ? $lastSnap->image_url : null,
+                    'latest_snapshot_status' => $lastSnap ? $lastSnap->status : 'normal',
                 ];
             });
 
@@ -285,9 +305,15 @@ class ExamController extends Controller
             return response()->json(['error' => 'Invalid attempt for this exam'], 404);
         }
 
-        $attempt->load(['student', 'antiCheatLogs' => function($q) {
-            $q->orderBy('occurred_at', 'desc');
-        }]);
+        $attempt->load([
+            'student',
+            'antiCheatLogs' => function($q) {
+                $q->orderBy('occurred_at', 'desc');
+            },
+            'proctorSnapshots' => function($q) {
+                $q->orderBy('captured_at', 'desc');
+            }
+        ]);
 
         $student = $attempt->student;
         $logs = $attempt->antiCheatLogs->map(function ($log) {
@@ -302,10 +328,25 @@ class ExamController extends Controller
                 'severity' => $info['severity'],
                 'duration_seconds' => $log->duration_seconds,
                 'ip_address' => $log->ip_address,
+                'snapshot_url' => $log->snapshot_url,
                 'occurred_at' => $log->occurred_at ? $log->occurred_at->format('H:i:s d/m/Y') : null,
                 'occurred_time' => $log->occurred_at ? $log->occurred_at->format('H:i:s') : null,
                 'time_diff' => $log->occurred_at ? $log->occurred_at->diffForHumans() : null,
                 'event_data' => $log->event_data,
+            ];
+        });
+
+        $snapshots = $attempt->proctorSnapshots->map(function ($snap) {
+            return [
+                'id' => $snap->id,
+                'image_url' => $snap->image_url,
+                'status' => $snap->status,
+                'violations' => $snap->violations ?? [],
+                'detections' => $snap->detections ?? [],
+                'face_similarity' => $snap->face_similarity,
+                'details' => $snap->details,
+                'captured_at' => $snap->captured_at ? $snap->captured_at->format('H:i:s d/m/Y') : null,
+                'captured_time' => $snap->captured_at ? $snap->captured_at->format('H:i:s') : null,
             ];
         });
 
@@ -317,6 +358,11 @@ class ExamController extends Controller
             'tab_switches' => $logs->whereIn('event_type', ['tab_switch', 'window_blur'])->count(),
             'copy_pastes' => $logs->whereIn('event_type', ['copy', 'paste', 'cut'])->count(),
             'right_clicks' => $logs->where('event_type', 'right_click')->count(),
+            'phone_violations' => $logs->where('event_type', 'phone_detected')->count(),
+            'multiple_persons' => $logs->where('event_type', 'multiple_persons')->count(),
+            'face_absent' => $logs->where('event_type', 'face_absent')->count(),
+            'face_mismatches' => $logs->where('event_type', 'face_mismatch')->count(),
+            'total_snapshots' => $snapshots->count(),
         ];
 
         return response()->json([
@@ -326,6 +372,8 @@ class ExamController extends Controller
                 'code' => $student->code ?? 'N/A',
                 'email' => $student->email ?? 'N/A',
                 'initial' => mb_substr($student->name ?? '?', 0, 1, 'UTF-8'),
+                'enrolled_image_url' => $student ? $student->frontal_face_url : null,
+                'face_registered' => $student ? $student->face_registered : false,
             ],
             'attempt' => [
                 'id' => $attempt->id,
@@ -339,9 +387,13 @@ class ExamController extends Controller
                 'unanswered' => $attempt->unanswered,
                 'cheat_warnings' => $attempt->cheat_warnings,
                 'out_of_screen_time' => $attempt->out_of_screen_time,
+                'face_verified_at' => $attempt->face_verified_at ? $attempt->face_verified_at->format('H:i:s d/m/Y') : null,
+                'face_similarity' => $attempt->face_similarity,
+                'verification_image_url' => $attempt->verification_image_url,
             ],
             'stats' => $stats,
             'logs' => $logs,
+            'snapshots' => $snapshots,
         ]);
     }
 }

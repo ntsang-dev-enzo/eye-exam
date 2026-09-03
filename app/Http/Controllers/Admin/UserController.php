@@ -40,4 +40,42 @@ class UserController extends Controller
 
         return view('admin.users.index', compact('users'));
     }
+
+    /**
+     * Reset Face ID registration for a student to allow re-registration if errors occur.
+     */
+    public function resetFaceId(User $user)
+    {
+        if ($user->role !== 'student') {
+            return back()->with('error', 'Chỉ có thể đặt lại Face ID cho tài khoản sinh viên.');
+        }
+
+        // Remove old photos from storage if present
+        if (!empty($user->face_images) && is_array($user->face_images)) {
+            foreach ($user->face_images as $p) {
+                \App\Services\SecureMediaService::delete($p);
+            }
+        }
+        if ($user->frontal_face_path) {
+            \App\Services\SecureMediaService::delete($user->frontal_face_path);
+        }
+        if ($user->left_face_path) {
+            \App\Services\SecureMediaService::delete($user->left_face_path);
+        }
+        if ($user->right_face_path) {
+            \App\Services\SecureMediaService::delete($user->right_face_path);
+        }
+
+        $user->update([
+            'face_registered' => false,
+            'face_registered_at' => null,
+            'face_embedding' => null,
+            'face_images' => null,
+            'frontal_face_path' => null,
+            'left_face_path' => null,
+            'right_face_path' => null,
+        ]);
+
+        return back()->with('success', "Đã đặt lại Face ID cho sinh viên {$user->name} ({$user->code}). Sinh viên đã được cấp quyền chụp lại khuôn mặt mới.");
+    }
 }

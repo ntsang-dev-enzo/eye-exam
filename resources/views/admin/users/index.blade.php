@@ -80,6 +80,7 @@
                         <th class="px-6 py-4">Họ và Tên / Email</th>
                         <th class="px-6 py-4">Vai trò</th>
                         <th class="px-6 py-4">Khoa / Phòng ban</th>
+                        <th class="px-6 py-4">Face ID (AI)</th>
                         <th class="px-6 py-4">Trạng thái</th>
                         <th class="px-6 py-4">Ngày tạo</th>
                     </tr>
@@ -135,6 +136,38 @@
                                 {{ $user->department ?? '-' }}
                             </td>
 
+                            <!-- Face ID Status & Admin Reset Action -->
+                            <td class="px-6 py-4">
+                                @if($user->role === 'student')
+                                    @if($user->face_registered)
+                                        <div class="flex items-center gap-2.5">
+                                            @if($user->frontal_face_url)
+                                                <img src="{{ $user->frontal_face_url }}" class="w-8 h-8 rounded-full object-cover border-2 border-emerald-300 shadow-xs shrink-0" alt="Face">
+                                            @endif
+                                            <div>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                                    <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    Đã kích hoạt
+                                                </span>
+                                                <form action="{{ route('admin.users.reset-face', $user->id) }}" method="POST" onsubmit="return confirm('Đặt lại Face ID cho sinh viên {{ addslashes($user->name) }}? Sinh viên sẽ được phép quét lại khuôn mặt mới.')" class="mt-1">
+                                                    @csrf
+                                                    <button type="submit" class="text-[11px] text-rose-600 hover:text-rose-800 font-semibold hover:underline flex items-center gap-1" title="Đặt lại khuôn mặt nếu sinh viên bị lỗi">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                        Đặt lại Face ID
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                            Chưa đăng ký
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-slate-300 text-xs">-</span>
+                                @endif
+                            </td>
+
                             <!-- Status -->
                             <td class="px-6 py-4">
                                 @if($user->status === 'active')
@@ -166,7 +199,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
                                 <div class="flex flex-col items-center justify-center gap-3">
                                     <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>

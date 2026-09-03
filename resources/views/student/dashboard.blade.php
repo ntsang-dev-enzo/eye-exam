@@ -34,6 +34,24 @@
         </div>
     </div>
 
+    @if(!auth()->user()->face_registered)
+    <div class="bg-amber-50 border border-amber-200 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+                <h4 class="font-bold text-amber-900 text-base">Bạn chưa hoàn tất Đăng ký Nhận diện Khuôn mặt (Face ID)</h4>
+                <p class="text-xs text-amber-700 mt-0.5">Các kỳ thi yêu cầu xác minh danh tính trước khi cấp đề. Vui lòng dành 1 phút quét khuôn mặt qua webcam.</p>
+            </div>
+        </div>
+        <a href="{{ route('student.face.register') }}" class="shrink-0 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Đăng ký Face ID ngay</span>
+        </a>
+    </div>
+    @endif
+
     <!-- 2. Summary Statistics Grid -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center gap-4">

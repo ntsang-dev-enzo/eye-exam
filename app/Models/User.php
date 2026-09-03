@@ -26,6 +26,10 @@ class User extends Authenticatable
         'role',
         'department',
         'status',
+        'face_registered',
+        'face_embedding',
+        'face_images',
+        'face_registered_at',
     ];
 
     /**
@@ -36,6 +40,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'face_embedding',
+        'face_images',
     ];
 
     /**
@@ -48,7 +54,30 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'face_registered' => 'boolean',
+            'face_images' => 'array',
+            'face_registered_at' => 'datetime',
         ];
+    }
+
+    public function getFrontalFaceUrlAttribute(): ?string
+    {
+        if (!empty($this->face_images) && !empty($this->face_images['frontal'])) {
+            $path = $this->face_images['frontal'];
+            if (str_starts_with($path, 'http')) {
+                return $path;
+            }
+            return route('secure.media.face', ['targetUser' => $this->id, 'angle' => 'frontal']);
+        }
+        if (!empty($this->frontal_face_path)) {
+            return route('secure.media.face', ['targetUser' => $this->id, 'angle' => 'frontal']);
+        }
+        return null;
+    }
+
+    public function proctorSnapshots()
+    {
+        return $this->hasMany(ExamProctorSnapshot::class, 'student_id');
     }
 
     /**

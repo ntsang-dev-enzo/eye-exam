@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'ai_proctor' => [
+        'url' => env('AI_SERVICE_URL', 'http://127.0.0.1:5001'),
+        'threshold' => env('AI_FACE_THRESHOLD', 65.0),
+    ],
+
 ];

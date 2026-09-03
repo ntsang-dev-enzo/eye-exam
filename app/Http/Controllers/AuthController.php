@@ -50,6 +50,10 @@ class AuthController extends Controller
             } elseif ($user->role === 'admin') {
                 return redirect()->intended(route('admin.dashboard'));
             } elseif ($user->role === 'student') {
+                if (!$user->face_registered) {
+                    return redirect()->route('student.face.register')
+                        ->with('info', 'Chào mừng bạn! Vui lòng hoàn tất đăng ký khuôn mặt để kích hoạt tài khoản thi.');
+                }
                 return redirect()->intended(route('student.dashboard'));
             } else {
                 return redirect()->intended('/');

@@ -1107,12 +1107,162 @@
             document.getElementById('examForm').submit();
         }
 
-        window.addEventListener('beforeunload', function (e) {
-            if (timeRemaining > 0 && !isSubmitting) {
-                e.preventDefault();
-                e.returnValue = 'Bạn có chắc chắn muốn rời khỏi trang? Bài làm của bạn có thể chưa được nộp hoàn tất.';
+        // Note: Đã tắt cảnh báo rời khỏi trang web theo yêu cầu người dùng
+
+        // ====================================================
+        // AI PROCTORING ENGINE (RANDOM INTERVALS 2 - 4 MINS)
+        // ====================================================
+        @if($exam->enable_proctor_camera ?? true)
+        let proctorStream = null;
+        let proctorTimer = null;
+
+        async function initProctorCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn('Webcam không được hỗ trợ trên trình duyệt này.');
+                return;
             }
+
+            const proctorVideo = document.getElementById('proctorVideo');
+            if (!proctorVideo) {
+                console.warn('proctorVideo DOM element not found, retrying in 500ms...');
+                setTimeout(initProctorCamera, 500);
+                return;
+            }
+
+            try {
+                proctorStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                    audio: false
+                });
+
+                proctorVideo.srcObject = proctorStream;
+                try {
+                    await proctorVideo.play();
+                } catch(e) {
+                    console.log('Video play policy handled:', e);
+                }
+
+                // Initial fast snapshot after 6 seconds to record baseline photo immediately
+                setTimeout(() => {
+                    captureAndAnalyzeSnapshot();
+                    scheduleNextProctorSnapshot();
+                }, 6000);
+
+            } catch (err) {
+                console.error('Proctor camera init error:', err);
+            }
+        }
+
+        function scheduleNextProctorSnapshot() {
+            // Random interval between 90s (1m30s) and 120s (2 mins)
+            const minSeconds = 90;
+            const maxSeconds = 120;
+            const randomDelay = Math.floor(Math.random() * (maxSeconds - minSeconds + 1) + minSeconds) * 1000;
+            
+            console.log(`[AI Proctor] Next snapshot scheduled in ${Math.round(randomDelay / 1000)} seconds.`);
+
+            if (proctorTimer) clearTimeout(proctorTimer);
+            proctorTimer = setTimeout(async () => {
+                if (!isSubmitting) {
+                    await captureAndAnalyzeSnapshot();
+                    scheduleNextProctorSnapshot();
+                }
+            }, randomDelay);
+        }
+
+        async function captureAndAnalyzeSnapshot() {
+            const proctorVideo = document.getElementById('proctorVideo');
+            const proctorCanvas = document.getElementById('proctorOffscreenCanvas');
+            if (!proctorVideo || !proctorCanvas || isSubmitting) return;
+
+            // Wait if video dimensions are not ready yet
+            if (proctorVideo.videoWidth === 0 || proctorVideo.videoHeight === 0) {
+                console.warn('[AI Proctor] Video feed not ready yet, will retry shortly...');
+                setTimeout(captureAndAnalyzeSnapshot, 2000);
+                return;
+            }
+
+            proctorCanvas.width = proctorVideo.videoWidth || 640;
+            proctorCanvas.height = proctorVideo.videoHeight || 480;
+            const ctx = proctorCanvas.getContext('2d');
+            ctx.drawImage(proctorVideo, 0, 0, proctorCanvas.width, proctorCanvas.height);
+            const snapData = proctorCanvas.toDataURL('image/jpeg', 0.85);
+
+            try {
+                const response = await fetch('{{ route("student.exams.proctor-snapshot", $attempt->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ image: snapData })
+                });
+
+                const data = await response.json();
+                console.log('[AI Proctor] Snapshot analyzed & saved silently:', data.status);
+                // Note: Không báo cáo chụp hay hiện cảnh báo làm phiền sinh viên (chạy hoàn toàn ngầm)
+            } catch (err) {
+                console.warn('[AI Proctor] Snapshot upload notice:', err);
+            }
+        }
+
+        function toggleProctorPip() {
+            const body = document.getElementById('pipBody');
+            const btn = document.getElementById('pipToggleBtn');
+            if (body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+            } else {
+                body.classList.add('hidden');
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            @if(!empty($exam->require_face_verification) && empty($attempt->face_verified_at))
+                // Proctor camera will start after face verification completes
+            @else
+                initProctorCamera();
+            @endif
         });
+        @endif
+
+        @if($exam->require_face_verification && empty($attempt->face_verified_at))
+        window.addEventListener('DOMContentLoaded', () => {
+            openFaceVerifyModal({{ $exam->id }}, '{{ addslashes($exam->title) }}');
+        });
+        @endif
     </script>
+
+    <!-- AI Proctoring Floating PIP Widget (Cố định vĩnh viễn ở góc dưới bên trái) -->
+    @if($exam->enable_proctor_camera ?? true)
+    <div id="proctorPipWidget" class="fixed bottom-6 left-6 z-40 bg-slate-900/90 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-slate-700/80 p-3 overflow-hidden transition-all duration-300 w-48 sm:w-52 pointer-events-auto">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] font-bold">
+            <div class="flex items-center gap-1.5">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-slate-200">Giám sát AI</span>
+            </div>
+            <button type="button" onclick="toggleProctorPip()" id="pipToggleBtn" class="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="Thu nhỏ/Phóng to">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+        </div>
+        
+        <div id="pipBody" class="space-y-2">
+            <div class="relative aspect-[4/3] rounded-xl overflow-hidden bg-black border border-slate-800">
+                <video id="proctorVideo" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+                <div id="proctorStatusBadge" class="absolute bottom-1.5 left-1.5 px-2 py-0.5 bg-black/60 backdrop-blur-xs rounded text-[9px] font-semibold text-emerald-400 flex items-center gap-1">
+                    <span>Trực tiếp</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas id="proctorOffscreenCanvas" class="hidden"></canvas>
+    @endif
+
+    @include('student.exams.partials.face_verify_modal')
 </body>
 </html>
