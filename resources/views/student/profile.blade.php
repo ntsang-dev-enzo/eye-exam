@@ -10,8 +10,8 @@
         
         <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-5xl shadow-inner shrink-0 border-4 border-white shadow-lg overflow-hidden">
-                @if($user->frontal_face_url)
-                    <img src="{{ $user->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ $user->name }}">
+                @if($user->avatar_url)
+                    <img src="{{ $user->avatar_url }}" class="w-full h-full object-cover" alt="{{ $user->name }}">
                 @else
                     {{ substr($user->name, 0, 1) }}
                 @endif

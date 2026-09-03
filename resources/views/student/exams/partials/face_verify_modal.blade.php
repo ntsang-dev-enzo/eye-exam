@@ -22,29 +22,35 @@
 </style>
 
 <div id="faceVerifyModal" class="fixed inset-0 z-[99999] hidden">
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity" onclick="closeFaceVerifyModal()"></div>
+    <!-- Backdrop (Static backdrop, clicking does not dismiss) -->
+    <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity"></div>
 
     <div class="fixed inset-0 overflow-y-auto flex items-center justify-center p-4 sm:p-6">
         <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full p-6 sm:p-8 space-y-5 transform transition-all overflow-hidden z-10 text-center flex flex-col items-center">
-            
-            <!-- Close button -->
-            <button type="button" onclick="closeFaceVerifyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
 
             <!-- Header info -->
             <div class="space-y-1">
-                <h3 class="font-black text-lg text-slate-900">Xác thực Khuôn mặt</h3>
+                <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/80 mb-1">
+                    <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Xác thực Danh tính Bắt buộc
+                </div>
+                <h3 class="font-black text-lg text-slate-900">Nhận diện Khuôn mặt</h3>
                 <p id="modalExamTitle" class="text-xs text-slate-500 font-medium">Đang chuẩn bị phòng thi...</p>
             </div>
 
-            <!-- Circular Camera Scanner with Laser Line -->
+            <!-- Circular Camera Scanner with Laser Line & Center Target -->
             <div id="verifyCameraContainer" class="relative w-52 h-52 sm:w-56 sm:h-56 rounded-full overflow-hidden border-4 border-indigo-600 shadow-2xl bg-slate-950 flex items-center justify-center my-2 transition-all duration-300">
                 <video id="verifyVideo" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
                 
                 <!-- Laser Scanning Line -->
                 <div class="laser-verify-line"></div>
+
+                <!-- Center Target Alignment Guide (Khung căn tâm và định vị khuôn mặt) -->
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div class="w-32 h-40 rounded-[50%] border-2 border-dashed border-white/40 flex items-center justify-center">
+                        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+                    </div>
+                </div>
 
                 <!-- Circular Progress SVG Ring -->
                 <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 160 160">
@@ -60,13 +66,24 @@
             </div>
 
             <!-- Status Indicator -->
-            <div id="verifyMessageContainer" class="w-full text-center">
+            <div id="verifyMessageContainer" class="w-full text-center space-y-3">
                 <div id="verifyStatusBox" class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
                     <span class="relative flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
                     </span>
                     <span id="verifyStatusText">Nhìn thẳng và căn giữa khuôn mặt</span>
+                </div>
+
+                <!-- Exit / Cancel action (Safely returns to exams list, never allows bypassing verification) -->
+                <div>
+                    <button type="button" onclick="exitOrCancelFaceVerify()" class="text-[11px] text-slate-400 hover:text-rose-600 font-medium transition-colors">
+                        @if(request()->routeIs('student.exams.take'))
+                            ← Rời phòng thi (Không tiếp tục)
+                        @else
+                            Hủy và quay lại danh sách
+                        @endif
+                    </button>
                 </div>
             </div>
         </div>
@@ -100,11 +117,36 @@
         startVerifyAutoTracking();
     }
 
-    function closeFaceVerifyModal() {
+    function exitOrCancelFaceVerify() {
         if (verifyLoopTimer) clearInterval(verifyLoopTimer);
         if (autoRetryTimer) clearTimeout(autoRetryTimer);
-        document.getElementById('faceVerifyModal').classList.add('hidden');
         stopVerifyCamera();
+
+        const leaveForm = document.getElementById('leaveExamForm');
+        if (leaveForm) {
+            leaveForm.submit();
+            return;
+        }
+
+        if (activeVerifyExamId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/sinh-vien/de-thi/${activeVerifyExamId}/roi-phong`;
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            form.appendChild(csrf);
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+
+        window.location.href = "{{ route('student.exams.index') }}";
+    }
+
+    function closeFaceVerifyModal() {
+        exitOrCancelFaceVerify();
     }
 
     async function startVerifyCamera() {

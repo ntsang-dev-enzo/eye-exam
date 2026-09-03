@@ -176,12 +176,40 @@
                             </label>
 
                             <label class="flex items-start p-3 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5">
-                                <input type="checkbox" name="enable_proctor_camera" value="1" {{ old('enable_proctor_camera', $exam->enable_proctor_camera ?? true) ? 'checked' : '' }} class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
+                                <input type="checkbox" name="enable_proctor_camera" id="toggle_proctor_camera" value="1" {{ old('enable_proctor_camera', $exam->enable_proctor_camera ?? true) ? 'checked' : '' }} onchange="document.getElementById('proctor_interval_box').style.display = this.checked ? 'block' : 'none'" class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
                                 <div>
-                                    <span class="block text-xs font-bold text-indigo-900">Giám sát Camera AI ngẫu nhiên (YOLO)</span>
-                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Chụp ngẫu nhiên 2 - 4 phút/lần phát hiện điện thoại & thi hộ</span>
+                                    <span class="block text-xs font-bold text-indigo-900">Giám sát Camera AI định kỳ (YOLO + ArcFace)</span>
+                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Chụp ảnh định kỳ tự động phân tích vật thể & đối soát hồ sơ gốc</span>
                                 </div>
                             </label>
+
+                            <!-- Thiết lập thời gian chụp ảnh mỗi lần -->
+                            <div id="proctor_interval_box" class="sm:col-span-2 p-3.5 bg-gradient-to-r from-indigo-50/90 to-blue-50/90 rounded-xl border border-indigo-200 shadow-xs transition-all" style="{{ old('enable_proctor_camera', $exam->enable_proctor_camera ?? true) ? '' : 'display:none;' }}">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <label for="proctor_interval_seconds" class="block text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Thời gian chụp ảnh mỗi lần (Chu kỳ chụp)
+                                        </label>
+                                        <p class="text-[11px] text-indigo-700/80 mt-0.5">Khoảng thời gian hệ thống tự động chụp webcam thí sinh để YOLO phân tích & InsightFace đối soát khuôn mặt</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative w-36">
+                                            <input type="number" id="proctor_interval_seconds" name="proctor_interval_seconds" min="15" max="1800" step="5" value="{{ old('proctor_interval_seconds', $exam->proctor_interval_seconds ?? 120) }}" class="w-full px-3 py-1.5 text-xs font-bold text-indigo-900 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-right pr-10 shadow-xs">
+                                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-indigo-500 font-semibold pointer-events-none">giây</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-indigo-200/60 flex-wrap">
+                                    <span class="text-[11px] font-bold text-indigo-700 mr-1">Chọn nhanh:</span>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=30" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">30 giây</button>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=60" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">1 phút (60s)</button>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=90" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">1.5 phút (90s)</button>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=120" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">2 phút (120s)</button>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=180" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">3 phút (180s)</button>
+                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=300" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">5 phút (300s)</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

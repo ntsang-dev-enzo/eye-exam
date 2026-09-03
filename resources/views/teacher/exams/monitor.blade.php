@@ -12,7 +12,7 @@
                 <span class="text-sm font-semibold text-gray-900">Giám sát trực tiếp</span>
             </div>
             <h1 class="text-2xl font-bold text-gray-900 mt-1">Phòng Giám sát Kỳ thi: <span class="text-blue-600">{{ $exam->title }}</span></h1>
-            <p class="text-sm text-gray-500 mt-1">Mã đề: <span class="font-bold text-gray-700">{{ $exam->code }}</span> | Môn: <span class="font-bold text-gray-700">{{ $exam->subject->name ?? 'N/A' }}</span></p>
+            <p class="text-sm text-gray-500 mt-1">Mã đề: <span class="font-bold text-gray-700">{{ $exam->code }}</span> | Môn: <span class="font-bold text-gray-700">{{ $exam->subject->name ?? 'N/A' }}</span> | Chu kỳ chụp AI: <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">{{ $exam->proctor_interval_seconds ?? 120 }}s / lần</span></p>
         </div>
         <div class="flex items-center gap-3">
             <a href="{{ route('teacher.exams.results', $exam) }}" class="px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors font-semibold text-sm flex items-center gap-2">
@@ -483,12 +483,13 @@
 
                     const statusBadge = document.getElementById('compLatestStatusBadge');
                     statusBadge.classList.remove('hidden');
+                    const simText = latest.face_similarity ? ` • ${latest.face_similarity}% Khớp` : '';
                     if (latest.status === 'violation') {
                         statusBadge.className = 'absolute top-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500 text-white';
-                        statusBadge.innerText = 'Cảnh báo AI';
+                        statusBadge.innerText = 'Cảnh báo AI' + simText;
                     } else {
                         statusBadge.className = 'absolute top-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500 text-white';
-                        statusBadge.innerText = 'Bình thường';
+                        statusBadge.innerText = latest.face_similarity ? `${latest.face_similarity}% Khớp` : 'Bình thường';
                     }
                 } else {
                     document.getElementById('compLatestImg').classList.add('hidden');
@@ -529,11 +530,12 @@
             if (isViolation) {
                 tagHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 animate-pulse">Vi phạm AI</span>`;
             }
+            const simBadge = snap.face_similarity ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${snap.face_similarity >= 50 ? 'bg-indigo-600' : 'bg-rose-600'} text-white shadow-2xs">${snap.face_similarity}% Khớp</span>` : '';
 
             card.innerHTML = `
                 <div class="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-900 mb-2">
                     <img src="${snap.image_url}" class="w-full h-full object-cover">
-                    <div class="absolute top-1.5 right-1.5">${tagHtml}</div>
+                    <div class="absolute top-1.5 right-1.5 flex items-center gap-1">${simBadge}${tagHtml}</div>
                     <div class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 rounded text-[9px] font-mono text-white">
                         ${snap.captured_time || snap.captured_at}
                     </div>
@@ -567,6 +569,13 @@
 
         const labelsList = document.getElementById('lightboxLabelsList');
         labelsList.innerHTML = '';
+
+        if (snap.face_similarity) {
+            const faceTag = document.createElement('span');
+            faceTag.className = 'px-2 py-0.5 rounded text-[10px] font-bold text-white bg-indigo-600';
+            faceTag.innerText = `Face ID: ${snap.face_similarity}% Khớp`;
+            labelsList.appendChild(faceTag);
+        }
 
         if (snap.detections && snap.detections.length > 0) {
             snap.detections.forEach(det => {

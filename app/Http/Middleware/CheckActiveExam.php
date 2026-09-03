@@ -21,6 +21,7 @@ class CheckActiveExam
             $allowedRoutes = [
                 'student.exams.take',
                 'student.exams.submit',
+                'student.exams.leave',
                 'student.exams.cheat',
                 'student.exams.save-answer',
                 'student.exams.sync-offline',
@@ -38,6 +39,12 @@ class CheckActiveExam
                     ->first();
                     
                 if ($activeAttempt) {
+                    // If student has not verified face yet, allow canceling/returning
+                    if (empty($activeAttempt->face_verified_at)) {
+                        return $next($request);
+                    }
+
+                    // While doing the exam (face-verified), student CANNOT leave until submitted!
                     return redirect()->route('student.exams.take', $activeAttempt->exam_id);
                 }
             }

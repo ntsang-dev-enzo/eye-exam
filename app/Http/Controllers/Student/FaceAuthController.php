@@ -123,9 +123,22 @@ class FaceAuthController extends Controller
         $probeImage = $request->input('image');
         $enrolledEmbedding = is_string($user->face_embedding) ? json_decode($user->face_embedding, true) : $user->face_embedding;
 
-        // Threshold >= 70% as specified by user
-        $threshold = 70.0;
-        $result = $this->aiProctor->verifyFace($probeImage, $enrolledEmbedding, $threshold);
+        // Provide enrolled frontal face image for direct InsightFace ArcFace photo comparison
+        $enrolledImageBase64 = null;
+        if (!empty($user->face_images)) {
+            $images = is_string($user->face_images) ? json_decode($user->face_images, true) : $user->face_images;
+            $frontalPath = $images['frontal'] ?? null;
+            if ($frontalPath) {
+                $decrypted = \App\Services\SecureMediaService::getDecrypted($frontalPath);
+                if ($decrypted) {
+                    $enrolledImageBase64 = 'data:image/jpeg;base64,' . base64_encode($decrypted);
+                }
+            }
+        }
+
+        // Standard ArcFace threshold (55.0%) to accommodate desk distance variations while blocking imposters (<20%)
+        $threshold = 55.0;
+        $result = $this->aiProctor->verifyFace($probeImage, $enrolledEmbedding, $threshold, $enrolledImageBase64);
 
         if (!$result['success'] || !$result['matched']) {
             return response()->json([

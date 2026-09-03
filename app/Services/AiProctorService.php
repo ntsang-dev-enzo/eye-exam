@@ -75,16 +75,21 @@ class AiProctorService
      * @param float|null $threshold Minimum similarity percentage (default 70.0)
      * @return array [ 'success' => bool, 'matched' => bool, 'similarity' => float, 'message' => string ]
      */
-    public function verifyFace(string $probeImage, array $enrolledEmbedding, ?float $threshold = null): array
+    public function verifyFace(string $probeImage, array $enrolledEmbedding, ?float $threshold = null, ?string $enrolledImage = null): array
     {
         $threshold = $threshold ?? $this->defaultThreshold;
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/api/face/verify", [
+            $payload = [
                 'image' => $probeImage,
                 'enrolled_embedding' => $enrolledEmbedding,
                 'threshold' => $threshold,
-            ]);
+            ];
+            if (!empty($enrolledImage)) {
+                $payload['enrolled_image'] = $enrolledImage;
+            }
+
+            $response = Http::timeout(10)->post("{$this->baseUrl}/api/face/verify", $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -103,7 +108,7 @@ class AiProctorService
                 'matched' => false,
                 'similarity' => 0.0,
                 'threshold' => $threshold,
-                'message' => $response->json('message') ?? 'Không thể phân tích khuôn mặt.',
+                'message' => $response->json('message') ?? $response->json('error') ?? 'Không thể phân tích khuôn mặt.',
             ];
         } catch (\Throwable $e) {
             Log::error("Face verification error: " . $e->getMessage());
@@ -118,6 +123,39 @@ class AiProctorService
     }
 
     /**
+     * Directly compare two face images using InsightFace ArcFace model.
+     */
+    public function compareFaces(string $image1, string $image2, ?float $threshold = 70.0): array
+    {
+        try {
+            $response = Http::timeout(10)->post("{$this->baseUrl}/api/face/compare", [
+                'image1' => $image1,
+                'image2' => $image2,
+                'threshold' => $threshold,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return [
+                'success' => false,
+                'matched' => false,
+                'similarity' => 0.0,
+                'message' => $response->json('message') ?? 'Không thể so sánh 2 ảnh.',
+            ];
+        } catch (\Throwable $e) {
+            Log::error("Direct face comparison error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'matched' => false,
+                'similarity' => 0.0,
+                'message' => 'Lỗi kết nối dịch vụ AI so sánh khuôn mặt.',
+            ];
+        }
+    }
+
+    /**
      * Analyze in-exam proctoring snapshot with YOLOv8 & ArcFace.
      *
      * @param string $snapshotImage Base64 encoded webcam image
@@ -125,16 +163,21 @@ class AiProctorService
      * @param float|null $threshold
      * @return array
      */
-    public function analyzeProctorSnapshot(string $snapshotImage, ?array $enrolledEmbedding = null, ?float $threshold = null): array
+    public function analyzeProctorSnapshot(string $snapshotImage, ?array $enrolledEmbedding = null, ?float $threshold = null, ?string $verificationImage = null): array
     {
         $threshold = $threshold ?? $this->defaultThreshold;
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/api/proctor/analyze", [
+            $payload = [
                 'image' => $snapshotImage,
                 'enrolled_embedding' => $enrolledEmbedding,
                 'threshold' => $threshold,
-            ]);
+            ];
+            if (!empty($verificationImage)) {
+                $payload['verification_image'] = $verificationImage;
+            }
+
+            $response = Http::timeout(10)->post("{$this->baseUrl}/api/proctor/analyze", $payload);
 
             if ($response->successful()) {
                 return $response->json();

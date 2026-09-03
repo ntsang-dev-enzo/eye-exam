@@ -23,6 +23,7 @@ class User extends Authenticatable
         'code',
         'email',
         'password',
+        'avatar',
         'role',
         'department',
         'status',
@@ -58,6 +59,20 @@ class User extends Authenticatable
             'face_images' => 'array',
             'face_registered_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get user avatar URL (explicitly uploaded by Admin/User, separate from Face ID).
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!empty($this->avatar)) {
+            if (str_starts_with($this->avatar, 'http')) {
+                return $this->avatar;
+            }
+            return route('secure.media.avatar', $this->id);
+        }
+        return null;
     }
 
     public function getFrontalFaceUrlAttribute(): ?string

@@ -71,8 +71,12 @@
         <!-- User profile in sidebar -->
         <div class="p-4 border-t border-gray-50 shrink-0">
             <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100/50">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-blue-700 font-bold shadow-inner shrink-0">
-                    {{ substr(auth()->user()->name, 0, 1) }}
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-blue-700 font-bold shadow-inner shrink-0 overflow-hidden border border-blue-200">
+                    @if(auth()->user()->avatar_url)
+                        <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
+                    @else
+                        {{ substr(auth()->user()->name, 0, 1) }}
+                    @endif
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-bold text-gray-900 truncate">{{ auth()->user()->name }}</p>

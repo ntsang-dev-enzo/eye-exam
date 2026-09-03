@@ -80,6 +80,35 @@ class SecureMediaController extends Controller
     }
 
     /**
+     * Stream user avatar uploaded via Admin (separate from Face ID verification photo).
+     */
+    public function streamAvatar(Request $request, User $targetUser): Response
+    {
+        $currentUser = auth()->user();
+        if (!$currentUser) {
+            abort(401, 'Chưa đăng nhập.');
+        }
+
+        if (empty($targetUser->avatar)) {
+            abort(404, 'Người dùng chưa có ảnh đại diện.');
+        }
+
+        $binary = SecureMediaService::getDecrypted($targetUser->avatar);
+        if (!$binary) {
+            abort(404, 'Không tìm thấy tệp ảnh đại diện.');
+        }
+
+        return response($binary, 200, [
+            'Content-Type' => 'image/jpeg',
+            'Content-Disposition' => 'inline; filename="avatar_' . $targetUser->id . '.jpg"',
+            'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /**
      * Stream the enrolled Face ID profile photo of a user.
      */
     public function streamFace(Request $request, User $targetUser): Response

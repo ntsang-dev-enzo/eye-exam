@@ -32,6 +32,8 @@ Route::middleware('auth')->group(function () {
         // User Account Management
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/reset-face', [AdminUserController::class, 'resetFaceId'])->name('users.reset-face');
+        Route::post('/users/{user}/avatar', [AdminUserController::class, 'updateAvatar'])->name('users.update-avatar');
+        Route::delete('/users/{user}/avatar', [AdminUserController::class, 'deleteAvatar'])->name('users.delete-avatar');
         
         // Subjects
         Route::get('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('subjects.index');
@@ -128,6 +130,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/de-thi/tham-gia', [\App\Http\Controllers\Student\ExamController::class, 'join'])->name('exams.join');
         Route::get('/de-thi/{exam}/lam-bai', [\App\Http\Controllers\Student\ExamController::class, 'take'])->name('exams.take');
         Route::post('/de-thi/{exam}/nop-bai', [\App\Http\Controllers\Student\ExamController::class, 'submit'])->name('exams.submit');
+        Route::post('/de-thi/{exam}/roi-phong', [\App\Http\Controllers\Student\ExamController::class, 'leave'])->name('exams.leave');
         Route::post('/attempt/{attempt}/cheat', [\App\Http\Controllers\Student\ExamController::class, 'cheat'])->name('exams.cheat');
         Route::post('/attempt/{attempt}/save-answer', [\App\Http\Controllers\Student\ExamController::class, 'saveAnswer'])->name('exams.save-answer');
         Route::post('/attempt/{attempt}/sync-offline', [\App\Http\Controllers\Student\ExamController::class, 'syncOffline'])->name('exams.sync-offline');
@@ -157,6 +160,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/snapshot/{snapshot}', [\App\Http\Controllers\SecureMediaController::class, 'streamSnapshot'])->name('snapshot');
         Route::get('/verification/{attempt}', [\App\Http\Controllers\SecureMediaController::class, 'streamVerification'])->name('verification');
         Route::get('/face/{targetUser}', [\App\Http\Controllers\SecureMediaController::class, 'streamFace'])->name('face');
+        Route::get('/avatar/{targetUser}', [\App\Http\Controllers\SecureMediaController::class, 'streamAvatar'])->name('avatar');
         Route::get('/log/{log}', [\App\Http\Controllers\SecureMediaController::class, 'streamLogSnapshot'])->name('log');
     });
 });

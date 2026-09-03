@@ -1154,12 +1154,16 @@
         }
 
         function scheduleNextProctorSnapshot() {
-            // Random interval between 90s (1m30s) and 120s (2 mins)
-            const minSeconds = 90;
-            const maxSeconds = 120;
-            const randomDelay = Math.floor(Math.random() * (maxSeconds - minSeconds + 1) + minSeconds) * 1000;
+            // Configured snapshot interval set by Teacher (default 120s if not set)
+            const baseInterval = {{ intval($exam->proctor_interval_seconds ?: 120) }};
             
-            console.log(`[AI Proctor] Next snapshot scheduled in ${Math.round(randomDelay / 1000)} seconds.`);
+            // Random variation around the teacher's configured interval (±10%, min 3s) so timing is not completely predictable
+            const jitterRange = Math.max(3, Math.round(baseInterval * 0.10));
+            const minSec = Math.max(10, baseInterval - jitterRange);
+            const maxSec = baseInterval + jitterRange;
+            const randomDelay = Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000;
+            
+            console.log(`[AI Proctor] Next snapshot in ${Math.round(randomDelay / 1000)}s (Configured by Teacher: ${baseInterval}s).`);
 
             if (proctorTimer) clearTimeout(proctorTimer);
             proctorTimer = setTimeout(async () => {

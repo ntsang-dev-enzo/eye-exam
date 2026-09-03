@@ -168,6 +168,9 @@ class ExamController extends Controller
         if (!$attempt) {
             return redirect()->route('student.dashboard')->with('error', 'Bạn không thể truy cập bài thi này.');
         }
+
+        // Student is actively taking the exam, clear any prior leave flag
+        session()->forget('exam_left_' . $attempt->id);
         
         // Time check
         if ($exam->end_at && now()->gt($exam->end_at)) {
@@ -189,6 +192,31 @@ class ExamController extends Controller
             ->keyBy('question_id');
 
         return view('student.exams.take', compact('exam', 'attempt', 'timeRemaining', 'savedAnswers'));
+    }
+
+    /**
+     * Leave the exam room cleanly and return to exam list.
+     */
+    public function leave(Request $request, Exam $exam)
+    {
+        $attempt = ExamAttempt::where('exam_id', $exam->id)
+            ->where('student_id', auth()->id())
+            ->where('status', 'in_progress')
+            ->latest('id')
+            ->first();
+
+        if ($attempt) {
+            // User requirement: "out ra luôn chứ chưa tính là thi nên không có nút tiếp tục"
+            // Completely delete the attempt and its answers/snapshots/logs so it does not count
+            $attempt->answers()->delete();
+            $attempt->proctorSnapshots()->delete();
+            $attempt->antiCheatLogs()->delete();
+            $attempt->delete();
+
+            session()->forget('exam_left_' . $attempt->id);
+        }
+
+        return redirect()->route('student.exams.index')->with('info', 'Bạn đã rời phòng thi thành công. Lượt thi này chưa được tính.');
     }
 
     public function saveAnswer(Request $request, $attemptId)
@@ -546,9 +574,18 @@ class ExamController extends Controller
             ? (is_string($student->face_embedding) ? json_decode($student->face_embedding, true) : $student->face_embedding)
             : null;
 
-        // Call AI Service
+        // Also retrieve entry verification photo taken when student passed Face ID to enter this exam
+        $verificationImageBase64 = null;
+        if (!empty($attempt->verification_image)) {
+            $decryptedVer = \App\Services\SecureMediaService::getDecrypted($attempt->verification_image);
+            if ($decryptedVer) {
+                $verificationImageBase64 = 'data:image/jpeg;base64,' . base64_encode($decryptedVer);
+            }
+        }
+
+        // Call AI Service with dual reference comparison (enrolled profile + entry verification photo)
         $aiService = app(\App\Services\AiProctorService::class);
-        $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 70.0);
+        $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 55.0, $verificationImageBase64);
 
         // Save encrypted image to private storage: storage/app/private/proctor/{attempt_id}/
         $folder = "proctor/{$attempt->id}";

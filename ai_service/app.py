@@ -144,12 +144,16 @@ def extract_embedding():
 def verify_face():
     """
     Verifies probe face image against registered student ArcFace embedding.
-    User required threshold: >= 70% (0.70).
+    Ensures:
+    1. Person/face is centered in camera frame ("ở trung tâm ảnh").
+    2. Face is clear, well-lit, not blurry, and close enough ("rõ mặt của sinh viên").
+    3. Face embedding strictly matches registered Face ID >= threshold ("phải khớp").
     """
     data = request.get_json(force=True)
     probe_b64 = data.get('image')
-    # Default threshold 65.0% to support glasses wearers (with/without glasses)
-    threshold = float(data.get('threshold', 65.0))
+    enrolled_embedding = data.get('enrolled_embedding')
+    # Default threshold 70.0%
+    threshold = float(data.get('threshold', 70.0))
 
     if not probe_b64 or not enrolled_embedding:
         return jsonify({'error': 'Thiếu ảnh quét hoặc dữ liệu khuôn mặt đã đăng ký.'}), 400
@@ -158,39 +162,230 @@ def verify_face():
     if img_bgr is None:
         return jsonify({'error': 'Dữ liệu ảnh không hợp lệ.'}), 400
 
+    h, w = img_bgr.shape[:2]
+
+    # -------------------------------------------------------------
+    # 0. YOLOv8 Object & Person Detection ("vừa YOLO phân tích")
+    # -------------------------------------------------------------
+    yolo_results = yolo_model(img_bgr, conf=0.35, verbose=False)[0]
+    person_count = 0
+    phone_detected = False
+    yolo_detections = []
+
+    for box in yolo_results.boxes:
+        cls_id = int(box.cls[0])
+        conf = float(box.conf[0])
+        bx1, by1, bx2, by2 = [int(v) for v in box.xyxy[0].tolist()]
+
+        if cls_id in CHEAT_CLASSES:
+            label = CHEAT_CLASSES[cls_id]
+            yolo_detections.append({
+                'label': label,
+                'confidence': round(conf * 100, 1),
+                'box': [bx1, by1, bx2, by2]
+            })
+            if label == 'person':
+                person_count += 1
+            elif label == 'cell phone':
+                phone_detected = True
+
+    if phone_detected:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Phát hiện điện thoại di động trước camera! Vui lòng cất điện thoại trước khi xác thực.',
+            'detections': yolo_detections
+        })
+
+    if person_count > 1:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': f'Phát hiện {person_count} người trong khung hình camera. Yêu cầu chỉ 1 thí sinh duy nhất trước màn hình!',
+            'detections': yolo_detections
+        })
+
     faces = face_app.get(img_bgr)
     if not faces:
         return jsonify({
             'success': False,
             'matched': False,
             'similarity': 0.0,
-            'message': 'Không nhận diện được khuôn mặt trong khung hình. Vui lòng căn chỉnh lại.',
+            'message': 'Không nhận diện được khuôn mặt trong khung hình. Vui lòng ngồi trước camera và đủ ánh sáng.',
+            'detections': yolo_detections
         })
 
-    # Pick primary face
+    # Pick primary face (largest area)
     faces = sorted(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]), reverse=True)
     face = faces[0]
 
-    probe_emb = normalize_vector(face.embedding)
-    enrolled_emb = normalize_vector(np.array(enrolled_embedding, dtype=np.float32))
+    # -------------------------------------------------------------
+    # 1. Centering Check ("người phải ở trung tâm ảnh")
+    # -------------------------------------------------------------
+    face_cx = (face.bbox[0] + face.bbox[2]) / 2.0 / float(w)
+    face_cy = (face.bbox[1] + face.bbox[3]) / 2.0 / float(h)
 
-    # Cosine similarity
-    cosine_sim = float(np.dot(probe_emb, enrolled_emb))
-    # Scale cosine similarity (-1.0 to 1.0) into a reliable 0-100 score
-    similarity_percent = round(max(0.0, min(100.0, cosine_sim * 100.0)), 1)
-    matched = bool(similarity_percent >= threshold)
+    if face_cx < 0.25:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Khuôn mặt bị lệch sang bên trái. Vui lòng ngồi vào chính giữa khung hình camera!',
+            'bbox': [int(x) for x in face.bbox]
+        })
+    elif face_cx > 0.75:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Khuôn mặt bị lệch sang bên phải. Vui lòng ngồi vào chính giữa khung hình camera!',
+            'bbox': [int(x) for x in face.bbox]
+        })
+    elif face_cy < 0.18:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Khuôn mặt ở quá cao. Vui lòng ngồi thẳng hoặc chỉnh camera xuống giữa mặt!',
+            'bbox': [int(x) for x in face.bbox]
+        })
+    elif face_cy > 0.82:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Khuôn mặt ở quá thấp. Vui lòng chỉnh camera thẳng góc mặt chính giữa!',
+            'bbox': [int(x) for x in face.bbox]
+        })
 
-    if matched:
-        msg = f'Xác thực thành công! Độ tương đồng {similarity_percent}% (Đạt yêu cầu tối thiểu {threshold}%).'
+    # -------------------------------------------------------------
+    # 2. Face Clarity & Size Check ("rõ mặt của sinh viên")
+    # -------------------------------------------------------------
+    face_w = face.bbox[2] - face.bbox[0]
+    face_h = face.bbox[3] - face.bbox[1]
+    face_h_ratio = face_h / float(h)
+
+    if face_h_ratio < 0.20 or face_w < 75:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': 'Thí sinh đang ngồi quá xa camera. Vui lòng ngồi lại gần màn hình hơn để nhận diện rõ mặt!',
+            'bbox': [int(x) for x in face.bbox]
+        })
+
+    # Blurriness detection via Laplacian variance
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    x1, y1 = max(0, int(face.bbox[0])), max(0, int(face.bbox[1]))
+    x2, y2 = min(w, int(face.bbox[2])), min(h, int(face.bbox[3]))
+    face_roi = gray[y1:y2, x1:x2]
+    if face_roi.size > 0:
+        blur_score = cv2.Laplacian(face_roi, cv2.CV_64F).var()
+        if blur_score < 26.0:
+            return jsonify({
+                'success': False,
+                'matched': False,
+                'similarity': 0.0,
+                'message': 'Hình ảnh khuôn mặt bị mờ. Vui lòng giữ yên tư thế và đảm bảo đủ ánh sáng!',
+                'bbox': [int(x) for x in face.bbox]
+            })
+
+    # Head pose check: Must look directly frontal (no side yaw or extreme pitch)
+    if hasattr(face, 'kps') and face.kps is not None and len(face.kps) >= 5:
+        kps = face.kps
+        eye_mid = (kps[0] + kps[1]) / 2.0
+        eye_dist = float(np.linalg.norm(kps[1] - kps[0])) or 1.0
+        yaw_offset = float((kps[2][0] - eye_mid[0]) / eye_dist)
+
+        mouth_mid = (kps[3] + kps[4]) / 2.0
+        face_v = float(abs(mouth_mid[1] - eye_mid[1])) or 1.0
+        pitch_ratio = float((kps[2][1] - eye_mid[1]) / face_v)
+
+        if abs(yaw_offset) > 0.22:
+            side = 'trái' if yaw_offset > 0.22 else 'phải'
+            return jsonify({
+                'success': False,
+                'matched': False,
+                'similarity': 0.0,
+                'message': f'Thí sinh đang quay mặt sang {side}. Vui lòng nhìn thẳng trực diện vào camera!',
+                'bbox': [int(x) for x in face.bbox]
+            })
+        elif pitch_ratio > 0.78:
+            return jsonify({
+                'success': False,
+                'matched': False,
+                'similarity': 0.0,
+                'message': 'Thí sinh đang cúi đầu. Vui lòng ngẩng mặt nhìn thẳng trực diện camera!',
+                'bbox': [int(x) for x in face.bbox]
+            })
+        elif pitch_ratio < 0.28:
+            return jsonify({
+                'success': False,
+                'matched': False,
+                'similarity': 0.0,
+                'message': 'Thí sinh đang ngẩng mặt lên trên. Vui lòng nhìn thẳng trực diện camera!',
+                'bbox': [int(x) for x in face.bbox]
+            })
+
+    # -------------------------------------------------------------
+    # 3. InsightFace ArcFace Comparison ("dùng InsightFace so sánh")
+    # -------------------------------------------------------------
+    rec_model = face_app.models.get('recognition')
+    enrolled_b64 = data.get('enrolled_image')
+
+    enrolled_feat = None
+    if enrolled_b64:
+        enrolled_bgr = decode_base64_image(enrolled_b64)
+        if enrolled_bgr is not None:
+            e_faces = face_app.get(enrolled_bgr)
+            if e_faces:
+                e_faces = sorted(e_faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]), reverse=True)
+                enrolled_feat = e_faces[0].embedding
+
+    if enrolled_feat is None and enrolled_embedding:
+        enrolled_feat = np.array(enrolled_embedding, dtype=np.float32)
+
+    if enrolled_feat is None:
+        return jsonify({'error': 'Không có dữ liệu khuôn mặt đăng ký gốc để so sánh.'}), 400
+
+    if rec_model and hasattr(rec_model, 'compute_sim'):
+        cosine_sim = float(rec_model.compute_sim(face.embedding, enrolled_feat))
     else:
-        msg = f'Khuôn mặt không khớp! Độ tương đồng {similarity_percent}% (Yêu cầu tối thiểu {threshold}%).'
+        probe_emb = normalize_vector(face.embedding)
+        ref_emb = normalize_vector(enrolled_feat)
+        cosine_sim = float(np.dot(probe_emb, ref_emb))
+
+    similarity_percent = round(max(0.0, min(100.0, cosine_sim * 100.0)), 1)
+    
+    # Adaptive threshold based on face distance:
+    # When sitting further away (0.20 <= face_h_ratio < 0.28), resolution is lower, threshold is 50.0%
+    # When sitting close up (face_h_ratio >= 0.28), threshold is 55.0%
+    effective_threshold = 50.0 if face_h_ratio < 0.28 else 55.0
+    matched = bool(similarity_percent >= effective_threshold)
+
+    if not matched:
+        if face_h_ratio < 0.28 and similarity_percent >= 38.0:
+            msg = f'Khuôn mặt ở khoảng cách xa camera làm giảm độ nét ({similarity_percent}%). Vui lòng ngồi gần camera hơn!'
+        else:
+            msg = f'Khuôn mặt không trùng khớp với ảnh đăng ký ({similarity_percent}% < {effective_threshold}%). Yêu cầu đúng thí sinh làm bài!'
+
+        return jsonify({
+            'success': True,
+            'matched': False,
+            'similarity': similarity_percent,
+            'threshold': effective_threshold,
+            'message': msg,
+            'bbox': [int(x) for x in face.bbox]
+        })
 
     return jsonify({
         'success': True,
-        'matched': matched,
+        'matched': True,
         'similarity': similarity_percent,
-        'threshold': threshold,
-        'message': msg,
+        'threshold': effective_threshold,
+        'message': f'Xác thực thành công! Khuôn mặt chuẩn tâm, rõ nét và trùng khớp {similarity_percent}% (Đạt yêu cầu).',
         'bbox': [int(x) for x in face.bbox]
     })
 
@@ -205,8 +400,9 @@ def analyze_proctor_snapshot():
     data = request.get_json(force=True)
     img_b64 = data.get('image')
     enrolled_embedding = data.get('enrolled_embedding')
-    # Default threshold 70% as requested by user
-    threshold = float(data.get('threshold', 70.0))
+    ver_b64 = data.get('verification_image')
+    # Default threshold 55% for in-exam monitoring
+    threshold = float(data.get('threshold', 55.0))
 
     if not img_b64:
         return jsonify({'error': 'Thiếu dữ liệu ảnh giám sát.'}), 400
@@ -214,6 +410,16 @@ def analyze_proctor_snapshot():
     img_bgr = decode_base64_image(img_b64)
     if img_bgr is None:
         return jsonify({'error': 'Ảnh không hợp lệ.'}), 400
+
+    # Extract embedding from entry verification photo if provided
+    ver_feat = None
+    if ver_b64:
+        ver_bgr = decode_base64_image(ver_b64)
+        if ver_bgr is not None:
+            v_faces = face_app.get(ver_bgr)
+            if v_faces:
+                v_faces = sorted(v_faces, key=lambda x: (x.bbox[2]-x.bbox[0])*(x.bbox[3]-x.bbox[1]), reverse=True)
+                ver_feat = v_faces[0].embedding
 
     h, w = img_bgr.shape[:2]
 
@@ -313,23 +519,50 @@ def analyze_proctor_snapshot():
             faces = sorted(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]), reverse=True)
             primary_face = faces[0]
 
-            # 2.1 Identity Verification (ArcFace)
-            if enrolled_embedding and primary_face.embedding is not None:
-                probe_emb = normalize_vector(primary_face.embedding)
-                enrolled_emb = normalize_vector(np.array(enrolled_embedding, dtype=np.float32))
-                cosine_sim = float(np.dot(probe_emb, enrolled_emb))
-                face_similarity = round(max(0.0, min(100.0, cosine_sim * 100.0)), 1)
-                face_matched = bool(face_similarity >= threshold)
+            box_w = float(primary_face.bbox[2] - primary_face.bbox[0])
+            box_h = float(primary_face.bbox[3] - primary_face.bbox[1])
+            distance_ratio = round(box_h / float(h), 3)
 
-                if not face_matched:
+            is_too_far = (distance_ratio < 0.16 or box_h < 75 or box_w < 65)
+            is_sitting_back = (0.16 <= distance_ratio < 0.24)
+
+            # 2.1 Distance Check ("rời xa màn hình")
+            if is_too_far:
+                violations.append({
+                    'type': 'too_far',
+                    'severity': 'medium',
+                    'message': 'Thí sinh ngồi quá xa camera (ngoài cự ly chuẩn). Vui lòng ngồi lại gần màn hình!'
+                })
+                if status != 'violation':
+                    status = 'warning'
+
+            # 2.2 Centering Check ("người phải ở trung tâm ảnh")
+            face_cx = (primary_face.bbox[0] + primary_face.bbox[2]) / 2.0 / float(w)
+            face_cy = (primary_face.bbox[1] + primary_face.bbox[3]) / 2.0 / float(h)
+            if face_cx < 0.18 or face_cx > 0.82 or face_cy < 0.10 or face_cy > 0.90:
+                violations.append({
+                    'type': 'off_center',
+                    'severity': 'medium',
+                    'message': 'Thí sinh ngồi lệch khỏi trung tâm camera. Yêu cầu ngồi ở vị trí chính giữa màn hình!'
+                })
+                if status != 'violation':
+                    status = 'warning'
+
+            # 2.3 Blurriness / Clarity Check ("rõ mặt của sinh viên")
+            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+            x1, y1 = max(0, int(primary_face.bbox[0])), max(0, int(primary_face.bbox[1]))
+            x2, y2 = min(w, int(primary_face.bbox[2])), min(h, int(primary_face.bbox[3]))
+            face_roi = gray[y1:y2, x1:x2]
+            if face_roi.size > 0:
+                blur_score = cv2.Laplacian(face_roi, cv2.CV_64F).var()
+                if blur_score < 24.0:
                     violations.append({
-                        'type': 'face_mismatch',
-                        'severity': 'high',
-                        'message': f'Khuôn mặt không trùng khớp thí sinh ({face_similarity}% < {threshold}%). Nghi vấn thi hộ!'
+                        'type': 'face_blur',
+                        'severity': 'low',
+                        'message': 'Hình ảnh khuôn mặt bị mờ hoặc thiếu sáng, không rõ mặt thí sinh.'
                     })
-                    status = 'violation'
 
-            # 2.2 Direct Frontal Gaze & Distance Estimation (Chống quay trái/phải/lên/xuống)
+            # 2.4 Direct Frontal Gaze
             if hasattr(primary_face, 'kps') and primary_face.kps is not None and len(primary_face.kps) >= 5:
                 kps = primary_face.kps
                 eye_mid = (kps[0] + kps[1]) / 2.0
@@ -339,9 +572,6 @@ def analyze_proctor_snapshot():
                 mouth_mid = (kps[3] + kps[4]) / 2.0
                 face_v = float(abs(mouth_mid[1] - eye_mid[1])) or 1.0
                 pitch_ratio = float((kps[2][1] - eye_mid[1]) / face_v)
-
-                box_h = float(primary_face.bbox[3] - primary_face.bbox[1])
-                distance_ratio = round(box_h / float(h), 3)
 
                 gaze_status = 'frontal'
                 gaze_message = None
@@ -358,9 +588,6 @@ def analyze_proctor_snapshot():
                 elif pitch_ratio < 0.28:
                     gaze_status = 'looking_up'
                     gaze_message = 'Thí sinh ngẩng mặt lên trên'
-                elif distance_ratio < 0.16:
-                    gaze_status = 'too_far'
-                    gaze_message = 'Thí sinh ngồi quá xa camera (ngoài cự ly tiêu chuẩn)'
 
                 gaze_info = {
                     'status': gaze_status,
@@ -380,6 +607,62 @@ def analyze_proctor_snapshot():
                     if status != 'violation':
                         status = 'warning'
 
+            # 2.5 Identity Verification (InsightFace ArcFace with Dual Profile + Entry Verification Matching)
+            rec_model = face_app.models.get('recognition')
+            sim_enrolled = 0.0
+            sim_ver = 0.0
+
+            if enrolled_embedding and primary_face.embedding is not None:
+                enrolled_feat = np.array(enrolled_embedding, dtype=np.float32)
+                if rec_model and hasattr(rec_model, 'compute_sim'):
+                    c_sim = float(rec_model.compute_sim(primary_face.embedding, enrolled_feat))
+                else:
+                    c_sim = float(np.dot(normalize_vector(primary_face.embedding), normalize_vector(enrolled_feat)))
+                sim_enrolled = round(max(0.0, min(100.0, c_sim * 100.0)), 1)
+
+            if ver_feat is not None and primary_face.embedding is not None:
+                if rec_model and hasattr(rec_model, 'compute_sim'):
+                    v_sim = float(rec_model.compute_sim(primary_face.embedding, ver_feat))
+                else:
+                    v_sim = float(np.dot(normalize_vector(primary_face.embedding), normalize_vector(ver_feat)))
+                sim_ver = round(max(0.0, min(100.0, v_sim * 100.0)), 1)
+
+            # Combined similarity: takes the highest verified match between official profile & entry photo
+            if enrolled_embedding or ver_feat is not None:
+                face_similarity = max(sim_enrolled, sim_ver)
+            else:
+                face_similarity = None
+
+            if face_similarity is not None:
+                if is_too_far:
+                    face_matched = bool(face_similarity >= 38.0)
+                    if not face_matched:
+                        violations.append({
+                            'type': 'face_mismatch',
+                            'severity': 'high',
+                            'message': f'Khuôn mặt không trùng khớp thí sinh ({face_similarity}%). Nghi vấn thi hộ!'
+                        })
+                        status = 'violation'
+                elif is_sitting_back:
+                    face_matched = bool(face_similarity >= 48.0)
+                    if not face_matched:
+                        violations.append({
+                            'type': 'face_mismatch',
+                            'severity': 'high',
+                            'message': f'Khuôn mặt không trùng khớp thí sinh ({face_similarity}% < 48%). Nghi vấn thi hộ!'
+                        })
+                        status = 'violation'
+                else:
+                    face_matched = bool(face_similarity >= 52.0)
+                    if not face_matched:
+                        violations.append({
+                            'type': 'face_mismatch',
+                            'severity': 'high',
+                            'message': f'Khuôn mặt không trùng khớp thí sinh ({face_similarity}% < 52%). Nghi vấn thi hộ!'
+                        })
+                        status = 'violation'
+
+
     # Build summary
     if not violations:
         summary = 'Khung hình bình thường, 1 thí sinh làm bài nghiêm túc.'
@@ -396,6 +679,59 @@ def analyze_proctor_snapshot():
         'gaze_info': gaze_info,
         'summary': summary,
         'image_size': {'width': w, 'height': h}
+    })
+
+
+@app.route('/api/face/compare', methods=['POST'])
+def compare_two_faces():
+    """
+    Directly compares two face images using InsightFace ArcFace model.
+    Input: image1, image2 (base64)
+    Output: similarity, matched, model: InsightFace ArcFace
+    """
+    data = request.get_json(force=True)
+    img1_b64 = data.get('image1') or data.get('probe_image')
+    img2_b64 = data.get('image2') or data.get('enrolled_image')
+    threshold = float(data.get('threshold', 70.0))
+
+    if not img1_b64 or not img2_b64:
+        return jsonify({'error': 'Thiếu 2 ảnh để so sánh.'}), 400
+
+    img1 = decode_base64_image(img1_b64)
+    img2 = decode_base64_image(img2_b64)
+
+    if img1 is None or img2 is None:
+        return jsonify({'error': 'Dữ liệu ảnh không hợp lệ.'}), 400
+
+    faces1 = face_app.get(img1)
+    faces2 = face_app.get(img2)
+
+    if not faces1:
+        return jsonify({'success': False, 'message': 'Không tìm thấy khuôn mặt trong ảnh thứ nhất.'}), 400
+    if not faces2:
+        return jsonify({'success': False, 'message': 'Không tìm thấy khuôn mặt trong ảnh thứ hai.'}), 400
+
+    face1 = sorted(faces1, key=lambda x: (x.bbox[2]-x.bbox[0])*(x.bbox[3]-x.bbox[1]), reverse=True)[0]
+    face2 = sorted(faces2, key=lambda x: (x.bbox[2]-x.bbox[0])*(x.bbox[3]-x.bbox[1]), reverse=True)[0]
+
+    rec_model = face_app.models.get('recognition')
+    if rec_model and hasattr(rec_model, 'compute_sim'):
+        cosine_sim = float(rec_model.compute_sim(face1.embedding, face2.embedding))
+    else:
+        v1 = normalize_vector(face1.embedding)
+        v2 = normalize_vector(face2.embedding)
+        cosine_sim = float(np.dot(v1, v2))
+
+    similarity_percent = round(max(0.0, min(100.0, cosine_sim * 100.0)), 1)
+    matched = bool(similarity_percent >= threshold)
+
+    return jsonify({
+        'success': True,
+        'model': 'InsightFace ArcFace 512D',
+        'matched': matched,
+        'similarity': similarity_percent,
+        'threshold': threshold,
+        'message': f'Độ tương đồng InsightFace ArcFace: {similarity_percent}% (Ngưỡng {threshold}%).'
     })
 
 

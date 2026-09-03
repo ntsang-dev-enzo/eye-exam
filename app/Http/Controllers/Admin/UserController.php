@@ -78,4 +78,49 @@ class UserController extends Controller
 
         return back()->with('success', "Đã đặt lại Face ID cho sinh viên {$user->name} ({$user->code}). Sinh viên đã được cấp quyền chụp lại khuôn mặt mới.");
     }
+
+    /**
+     * Upload and update a user's separate avatar image via Admin.
+     */
+    public function updateAvatar(Request $request, User $user)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp|max:3072',
+        ], [
+            'avatar.required' => 'Vui lòng chọn một tệp ảnh đại diện.',
+            'avatar.image' => 'Tệp tải lên phải là hình ảnh hợp lệ.',
+            'avatar.mimes' => 'Định dạng ảnh cho phép: jpeg, png, jpg, webp.',
+            'avatar.max' => 'Dung lượng ảnh tối đa là 3MB.',
+        ]);
+
+        // Remove old avatar if exists
+        if ($user->avatar) {
+            \App\Services\SecureMediaService::delete($user->avatar);
+        }
+
+        $file = $request->file('avatar');
+        $binary = file_get_contents($file->getRealPath());
+        $folder = "avatars/{$user->id}";
+        $fileName = "{$folder}/avatar_" . time() . ".enc";
+        \App\Services\SecureMediaService::storeEncrypted($fileName, $binary, 'local');
+
+        $user->update([
+            'avatar' => $fileName,
+        ]);
+
+        return back()->with('success', "Đã cập nhật ảnh đại diện (avatar) cho {$user->name} thành công!");
+    }
+
+    /**
+     * Delete user avatar and revert to default initial badge.
+     */
+    public function deleteAvatar(User $user)
+    {
+        if ($user->avatar) {
+            \App\Services\SecureMediaService::delete($user->avatar);
+            $user->update(['avatar' => null]);
+        }
+
+        return back()->with('success', "Đã xóa ảnh đại diện của {$user->name}. Hệ thống sẽ sử dụng biểu tượng chữ cái mặc định.");
+    }
 }

@@ -68,8 +68,8 @@
             <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100/50 transition-colors">
                 <a href="{{ route('student.profile') }}" class="flex items-center gap-3 flex-1 min-w-0">
                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold shadow-inner shrink-0 overflow-hidden border border-indigo-200">
-                        @if(auth()->user()->frontal_face_url)
-                            <img src="{{ auth()->user()->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
+                        @if(auth()->user()->avatar_url)
+                            <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
                         @else
                             {{ substr(auth()->user()->name, 0, 1) }}
                         @endif

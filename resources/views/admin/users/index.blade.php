@@ -99,14 +99,34 @@
                                 @endif
                             </td>
 
-                            <!-- User Info -->
+                            <!-- User Info & Avatar -->
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0">
-                                        {{ mb_substr($user->name, 0, 1, 'UTF-8') }}
+                                    <div class="relative group shrink-0">
+                                        @if($user->avatar_url)
+                                            <img src="{{ $user->avatar_url }}" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-200 shadow-sm" alt="Avatar">
+                                        @else
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                                                {{ mb_substr($user->name, 0, 1, 'UTF-8') }}
+                                            </div>
+                                        @endif
+                                        <button type="button" 
+                                                onclick="openAvatarModal({{ $user->id }}, '{{ addslashes($user->name) }}', '{{ $user->avatar_url ?? '' }}')" 
+                                                class="absolute inset-0 bg-slate-900/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity" 
+                                                title="Cập nhật ảnh đại diện">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        </button>
                                     </div>
                                     <div>
-                                        <div class="font-bold text-slate-900">{{ $user->name }}</div>
+                                        <div class="font-bold text-slate-900 flex items-center gap-2">
+                                            <span>{{ $user->name }}</span>
+                                            <button type="button" 
+                                                    onclick="openAvatarModal({{ $user->id }}, '{{ addslashes($user->name) }}', '{{ $user->avatar_url ?? '' }}')" 
+                                                    class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold hover:underline" 
+                                                    title="Đổi ảnh đại diện">
+                                                [Đổi Avatar]
+                                            </button>
+                                        </div>
                                         <div class="text-xs text-slate-500">{{ $user->email }}</div>
                                     </div>
                                 </div>
@@ -226,4 +246,127 @@
         @endif
     </div>
 </div>
+
+<!-- Modal Cập nhật Avatar (Riêng biệt với Face ID) -->
+<div id="avatarModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-6 border border-slate-100 transform transition-all">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="text-lg font-black text-slate-900">Cập nhật Ảnh đại diện (Avatar)</h3>
+                <p id="modalUserName" class="text-xs text-slate-500 font-medium mt-0.5"></p>
+            </div>
+            <button type="button" onclick="closeAvatarModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <form id="avatarUploadForm" method="POST" enctype="multipart/form-data" class="space-y-5">
+            @csrf
+            <!-- Preview Box -->
+            <div class="flex flex-col items-center justify-center gap-3 py-2">
+                <div class="relative w-28 h-28 rounded-full overflow-hidden border-4 border-indigo-100 shadow-md bg-slate-100 flex items-center justify-center">
+                    <img id="avatarPreviewImg" src="" class="w-full h-full object-cover hidden" alt="Preview">
+                    <span id="avatarPlaceholder" class="text-slate-400 font-bold text-3xl">?</span>
+                </div>
+                <p class="text-xs text-slate-400 italic">Ảnh hiển thị riêng (Không dùng cho đối soát Face ID)</p>
+            </div>
+
+            <!-- File Input -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Chọn ảnh mới từ máy tính</label>
+                <input type="file" 
+                       id="avatarFileInput" 
+                       name="avatar" 
+                       accept="image/jpeg,image/png,image/webp" 
+                       required
+                       onchange="previewSelectedAvatar(this)"
+                       class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-slate-200 rounded-xl p-1.5">
+                <p class="text-[11px] text-slate-400">Hỗ trợ JPG, PNG, WEBP (Tối đa 3MB).</p>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-3">
+                <button type="button" 
+                        id="btnDeleteAvatar" 
+                        onclick="confirmDeleteAvatar()" 
+                        class="px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors hidden">
+                    Xóa Avatar
+                </button>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" onclick="closeAvatarModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-200 transition-colors">
+                        Lưu Thay Đổi
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Hidden form for deleting avatar -->
+        <form id="avatarDeleteForm" method="POST" class="hidden">
+            @csrf
+            @method('DELETE')
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentUserId = null;
+
+    function openAvatarModal(userId, userName, currentAvatarUrl) {
+        currentUserId = userId;
+        document.getElementById('modalUserName').textContent = 'Tài khoản: ' + userName;
+        
+        const form = document.getElementById('avatarUploadForm');
+        form.action = `/admin/users/${userId}/avatar`;
+
+        const deleteForm = document.getElementById('avatarDeleteForm');
+        deleteForm.action = `/admin/users/${userId}/avatar`;
+
+        const previewImg = document.getElementById('avatarPreviewImg');
+        const placeholder = document.getElementById('avatarPlaceholder');
+        const btnDelete = document.getElementById('btnDeleteAvatar');
+        const fileInput = document.getElementById('avatarFileInput');
+        fileInput.value = '';
+
+        if (currentAvatarUrl && currentAvatarUrl.trim() !== '') {
+            previewImg.src = currentAvatarUrl;
+            previewImg.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            btnDelete.classList.remove('hidden');
+        } else {
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            placeholder.textContent = userName.charAt(0).toUpperCase();
+            btnDelete.classList.add('hidden');
+        }
+
+        document.getElementById('avatarModal').classList.remove('hidden');
+    }
+
+    function closeAvatarModal() {
+        document.getElementById('avatarModal').classList.add('hidden');
+    }
+
+    function previewSelectedAvatar(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('avatarPreviewImg');
+                const placeholder = document.getElementById('avatarPlaceholder');
+                previewImg.src = e.target.result;
+                previewImg.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function confirmDeleteAvatar() {
+        if (confirm('Bạn có chắc chắn muốn xóa avatar của người dùng này và dùng biểu tượng mặc định?')) {
+            document.getElementById('avatarDeleteForm').submit();
+        }
+    }
+</script>
 @endsection

@@ -75,6 +75,7 @@ class ExamController extends Controller
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'questions' => 'required|array|min:1', // Array of question IDs
             'points' => 'required|array', // Array of points per question
+            'proctor_interval_seconds' => 'nullable|integer|min:15|max:1800',
         ]);
 
         $maxAttempts = $request->has('unlimited_attempts') || $request->max_attempts === '0' || empty($request->max_attempts) ? 0 : (int) $request->max_attempts;
@@ -151,6 +152,7 @@ class ExamController extends Controller
             'status' => 'required|in:published,closed',
             'questions' => 'required|array|min:1', // Array of question IDs
             'points' => 'required|array', // Array of points per question
+            'proctor_interval_seconds' => 'nullable|integer|min:15|max:1800',
         ]);
 
         $maxAttempts = $request->has('unlimited_attempts') || $request->max_attempts === '0' || empty($request->max_attempts) ? 0 : (int) $request->max_attempts;
