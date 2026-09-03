@@ -104,9 +104,26 @@
 
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-1">Trạng thái</p>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                    {{ ucfirst($user->status ?? 'Active') }}
-                </span>
+                @if(($user->status ?? 'active') === 'active')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Đang hoạt động
+                    </span>
+                @elseif(($user->status ?? '') === 'inactive')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Tạm khóa
+                    </span>
+                @elseif(($user->status ?? '') === 'locked')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        Đã khóa
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800">
+                        {{ $user->status }}
+                    </span>
+                @endif
             </div>
 
             <!-- Address Info -->

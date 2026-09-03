@@ -25,61 +25,60 @@
 
 <div class="max-w-4xl mx-auto space-y-6 pb-12">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
-        <div class="absolute -right-8 -bottom-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-2xs relative overflow-hidden border border-blue-700/50">
         <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold mb-3 border border-white/20">
-                    <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/15 rounded-full text-xs font-semibold mb-3">
+                    <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     Bảo mật danh tính & Chống gian lận
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Đăng ký Nhận diện Khuôn mặt (Face ID)</h1>
-                <p class="text-indigo-100 text-sm mt-1 max-w-xl">
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Đăng ký Nhận diện Khuôn mặt (Face ID)</h1>
+                <p class="text-blue-100 text-xs sm:text-sm mt-1 max-w-xl">
                     Hệ thống cần thu thập 3 góc nhìn khuôn mặt của bạn để tạo hồ sơ xác thực danh tính bằng AI (ArcFace). Dữ liệu này dùng để xác minh bạn trước mỗi kỳ thi.
                 </p>
             </div>
             @if($user->face_registered)
-                <div class="shrink-0 bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-2xl text-center">
+                <div class="shrink-0 bg-white/15 border border-white/20 px-4 py-2 rounded-xl text-center">
                     <span class="inline-flex items-center gap-1.5 text-emerald-300 text-xs font-bold">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         Đã đăng ký Face ID
                     </span>
-                    <p class="text-[11px] text-indigo-100 mt-0.5">Bạn có thể chụp lại để cập nhật</p>
+                    <p class="text-[11px] text-blue-100 mt-0.5">Bạn có thể chụp lại để cập nhật</p>
                 </div>
             @endif
         </div>
     </div>
 
-    <!-- Steps Progress Bar -->
-    <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+    <!-- Steps Wizard Horizontal Cards -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-2xs border border-slate-200/80">
         <div class="grid grid-cols-3 gap-3">
-            <div id="stepIndicator1" class="flex items-center gap-3 p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 transition-all">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+            <div id="stepIndicator1" class="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                     1
                 </div>
                 <div class="min-w-0">
-                    <p class="text-xs font-bold text-indigo-900 truncate">Nhìn thẳng</p>
-                    <p class="text-[11px] text-indigo-600 truncate">Góc chính diện</p>
+                    <p class="text-xs font-bold text-blue-900 truncate">Nhìn thẳng</p>
+                    <p class="text-[11px] text-blue-600 truncate">Góc chính diện</p>
                 </div>
             </div>
 
-            <div id="stepIndicator2" class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 border border-gray-100 transition-all">
-                <div class="w-8 h-8 rounded-lg bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm shrink-0">
+            <div id="stepIndicator2" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 transition-all opacity-60">
+                <div class="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">
                     2
                 </div>
                 <div class="min-w-0">
-                    <p class="text-xs font-bold text-gray-700 truncate">Nghiêng trái</p>
-                    <p class="text-[11px] text-gray-400 truncate">Khoảng 15° - 20°</p>
+                    <p class="text-xs font-bold text-slate-700 truncate">Nghiêng trái</p>
+                    <p class="text-[11px] text-slate-400 truncate">Khoảng 15° - 20°</p>
                 </div>
             </div>
 
-            <div id="stepIndicator3" class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 border border-gray-100 transition-all">
-                <div class="w-8 h-8 rounded-lg bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm shrink-0">
+            <div id="stepIndicator3" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 transition-all opacity-60">
+                <div class="w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">
                     3
                 </div>
                 <div class="min-w-0">
-                    <p class="text-xs font-bold text-gray-700 truncate">Nghiêng phải</p>
-                    <p class="text-[11px] text-gray-400 truncate">Khoảng 15° - 20°</p>
+                    <p class="text-xs font-bold text-slate-700 truncate">Nghiêng phải</p>
+                    <p class="text-[11px] text-slate-400 truncate">Khoảng 15° - 20°</p>
                 </div>
             </div>
         </div>
@@ -87,11 +86,11 @@
 
     <!-- Main Registration Workspace -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left: Webcam Viewport (7 cols) -->
-        <div class="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+        <!-- Left: Webcam Viewport & Controls (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-5 sm:p-6 shadow-2xs border border-slate-200/80 flex flex-col items-center">
             
             <!-- Instructions banner -->
-            <div id="statusInstruction" class="w-full bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-2xl mb-4 text-center flex items-center justify-center gap-2">
+            <div id="statusInstruction" class="w-full bg-blue-50 border border-blue-200/80 text-blue-800 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
                 <span class="relative flex h-2.5 w-2.5">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
@@ -100,7 +99,7 @@
             </div>
 
             <!-- Video Viewport Container -->
-            <div class="relative w-full aspect-[4/3] max-w-md bg-slate-900 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center border-4 border-slate-800">
+            <div class="relative w-full aspect-[4/3] max-w-md bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center border-4 border-slate-800">
                 <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
                 <canvas id="faceOverlay" class="absolute inset-0 w-full h-full pointer-events-none transform -scale-x-100"></canvas>
 
@@ -127,89 +126,97 @@
                     <svg class="w-12 h-12 text-rose-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18"></path></svg>
                     <p class="font-bold text-sm">Không thể kết nối camera</p>
                     <p class="text-xs text-slate-400 mt-1">Vui lòng cấp quyền truy cập webcam trong trình duyệt để tiếp tục.</p>
-                    <button type="button" onclick="startCamera()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700">Thử lại</button>
+                    <button type="button" onclick="startCamera()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">Thử lại</button>
                 </div>
             </div>
 
-            <!-- Viewport Controls & Live Status -->
-            <div class="mt-5 flex items-center justify-between w-full max-w-md gap-3">
-                <div class="flex items-center gap-2 text-xs">
-                    <span id="aiBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                        Đang tải AI...
-                    </span>
-                    <span id="poseBadge" class="text-slate-600 font-semibold">Chưa phát hiện mặt</span>
+            <!-- Viewport Controls & Live Status Control Bar -->
+            <div class="mt-4 w-full max-w-md space-y-3">
+                <div class="flex items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="aiBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            Đang tải AI...
+                        </span>
+                        <span id="poseBadge" class="text-slate-600 font-semibold">Chưa phát hiện mặt</span>
+                    </div>
+
+                    <!-- Manual Capture Button -->
+                    <button type="button" onclick="manualCaptureAngle()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-all shadow-2xs flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Chụp thủ công</span>
+                    </button>
                 </div>
 
-                <div class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Hỗ trợ đeo / tháo kính</span>
+                <div class="text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1 text-center">
+                    <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Thiết bị: Webcam mặc định • Ánh sáng tốt • Hỗ trợ đeo kính</span>
                 </div>
             </div>
         </div>
 
         <!-- Right: Captured Angles Gallery & Final Submission (5 cols) -->
         <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
-                <h3 class="font-bold text-gray-900 text-base flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <div class="bg-white rounded-2xl p-5 shadow-2xs border border-slate-200/80 space-y-4">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     Ảnh các góc chụp đã ghi nhận
                 </h3>
 
                 <!-- 3 Photo Slots -->
                 <div class="space-y-3">
                     <!-- Angle 1: Frontal -->
-                    <div id="slotFrontal" class="flex items-center justify-between p-3 rounded-2xl border-2 border-dashed border-gray-200 hover:border-indigo-300 transition-colors">
+                    <div id="slotFrontal" class="flex items-center justify-between p-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-300 transition-colors">
                         <div class="flex items-center gap-3">
-                            <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                            <div class="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
                                 <img id="previewFrontal" class="w-full h-full object-cover hidden" alt="Chính diện">
-                                <svg id="emptyFrontal" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <svg id="emptyFrontal" class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             </div>
                             <div>
-                                <p class="text-xs font-bold text-gray-900">1. Góc chính diện (Thẳng)</p>
-                                <span id="statusBadgeFrontal" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 mt-1">Chưa chụp</span>
+                                <p class="text-xs font-bold text-slate-900">1. Góc chính diện (Thẳng)</p>
+                                <span id="statusBadgeFrontal" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 mt-0.5">Chưa chụp</span>
                             </div>
                         </div>
-                        <button type="button" onclick="selectStep(1)" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-1">Chụp lại</button>
+                        <button type="button" onclick="selectStep(1)" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-1">Chụp lại</button>
                     </div>
 
                     <!-- Angle 2: Left -->
-                    <div id="slotLeft" class="flex items-center justify-between p-3 rounded-2xl border-2 border-dashed border-gray-200 hover:border-indigo-300 transition-colors">
+                    <div id="slotLeft" class="flex items-center justify-between p-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-300 transition-colors">
                         <div class="flex items-center gap-3">
-                            <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                            <div class="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
                                 <img id="previewLeft" class="w-full h-full object-cover hidden" alt="Nghiêng trái">
-                                <svg id="emptyLeft" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <svg id="emptyLeft" class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             </div>
                             <div>
-                                <p class="text-xs font-bold text-gray-900">2. Góc nghiêng trái (~20°)</p>
-                                <span id="statusBadgeLeft" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 mt-1">Chưa chụp</span>
+                                <p class="text-xs font-bold text-slate-900">2. Góc nghiêng trái (~20°)</p>
+                                <span id="statusBadgeLeft" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 mt-0.5">Chưa chụp</span>
                             </div>
                         </div>
-                        <button type="button" onclick="selectStep(2)" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-1">Chụp lại</button>
+                        <button type="button" onclick="selectStep(2)" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-1">Chụp lại</button>
                     </div>
 
                     <!-- Angle 3: Right -->
-                    <div id="slotRight" class="flex items-center justify-between p-3 rounded-2xl border-2 border-dashed border-gray-200 hover:border-indigo-300 transition-colors">
+                    <div id="slotRight" class="flex items-center justify-between p-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-300 transition-colors">
                         <div class="flex items-center gap-3">
-                            <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                            <div class="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200">
                                 <img id="previewRight" class="w-full h-full object-cover hidden" alt="Nghiêng phải">
-                                <svg id="emptyRight" class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <svg id="emptyRight" class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             </div>
                             <div>
-                                <p class="text-xs font-bold text-gray-900">3. Góc nghiêng phải (~20°)</p>
-                                <span id="statusBadgeRight" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 mt-1">Chưa chụp</span>
+                                <p class="text-xs font-bold text-slate-900">3. Góc nghiêng phải (~20°)</p>
+                                <span id="statusBadgeRight" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 mt-0.5">Chưa chụp</span>
                             </div>
                         </div>
-                        <button type="button" onclick="selectStep(3)" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-1">Chụp lại</button>
+                        <button type="button" onclick="selectStep(3)" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-1">Chụp lại</button>
                     </div>
                 </div>
 
                 <!-- Guidance Tips -->
-                <div class="bg-gray-50 rounded-2xl p-3.5 text-xs text-gray-500 space-y-1.5 border border-gray-100">
-                    <p class="font-bold text-gray-700 flex items-center gap-1.5">
+                <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-500 space-y-1 border border-slate-100">
+                    <p class="font-bold text-slate-700 flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Mẹo chụp ảnh đạt chuẩn:
                     </p>
-                    <ul class="list-disc list-inside space-y-1 text-[11px] text-gray-600 pl-1">
+                    <ul class="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 pl-1">
                         <li>Ngồi trong phòng đủ ánh sáng, tránh ngược sáng.</li>
                         <li>Tháo khẩu trang hoặc kính râm trước khi chụp.</li>
                         <li>Giữ yên đầu trong 1 giây khi vòng tròn chuyển xanh.</li>
@@ -218,8 +225,8 @@
             </div>
 
             <!-- Final Submit Action Button -->
-            <button type="button" id="submitRegisterBtn" disabled onclick="submitRegistration()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <button type="button" id="submitRegisterBtn" disabled onclick="submitRegistration()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xs transition-all hover:bg-blue-700 disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 <span>Hoàn tất Lưu Hồ Sơ Khuôn Mặt</span>
             </button>
         </div>
