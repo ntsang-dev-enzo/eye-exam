@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/de-thi/{exam}', [\App\Http\Controllers\Teacher\ExamController::class, 'update'])->name('exams.update');
         Route::delete('/de-thi/{exam}', [\App\Http\Controllers\Teacher\ExamController::class, 'destroy'])->name('exams.destroy');
         Route::patch('/de-thi/{exam}/trang-thai', [\App\Http\Controllers\Teacher\ExamController::class, 'updateStatus'])->name('exams.update-status');
+        Route::patch('/de-thi/{exam}/cai-dat-nhanh', [\App\Http\Controllers\Teacher\ExamController::class, 'updateQuickSettings'])->name('exams.update-quick-settings');
         Route::get('/de-thi/{exam}/ket-qua', [\App\Http\Controllers\Teacher\ExamController::class, 'results'])->name('exams.results');
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Teacher\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');

@@ -162,14 +162,35 @@ class AntiCheatLog extends Model
                     'icon' => 'face_retouching_off',
                     'severity' => 'high'
                 ];
-            case 'looking_away':
-                $msg = is_array($this->event_data) ? ($this->event_data['summary'] ?? null) : null;
+            case 'too_far':
+                $msg = is_array($this->event_data) ? ($this->event_data['message'] ?? null) : null;
                 return [
-                    'title' => 'Quay mặt / Không nhìn trực diện màn hình',
-                    'description' => $msg ?: 'AI phát hiện thí sinh quay đầu sang trái, phải hoặc cúi nhìn xuống bất thường.',
-                    'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
+                    'title' => 'Ngồi quá xa camera (Ngoài cự ly chuẩn)',
+                    'description' => $msg ?: 'Thí sinh ngồi quá xa camera (ngoài cự ly chuẩn). Yêu cầu ngồi lại gần màn hình.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'zoom_out',
+                    'severity' => 'high'
+                ];
+            case 'off_center':
+                $msg = is_array($this->event_data) ? ($this->event_data['message'] ?? null) : null;
+                return [
+                    'title' => 'Ngồi lệch khỏi trung tâm camera',
+                    'description' => $msg ?: 'Thí sinh ngồi lệch khỏi trung tâm camera. Yêu cầu ngồi ở vị trí chính giữa màn hình.',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
+                    'icon' => 'center_focus_weak',
+                    'severity' => 'high'
+                ];
+            case 'looking_away':
+            case 'head_turned_sustained':
+                $msg = is_array($this->event_data) ? ($this->event_data['message'] ?? $this->event_data['summary'] ?? null) : null;
+                $dirText = is_array($this->event_data) ? ($this->event_data['direction_text'] ?? null) : null;
+                $durText = $this->duration_seconds ? " ({$this->duration_seconds}s)" : "";
+                return [
+                    'title' => ($dirText ? "Quay mặt liên tục: {$dirText}{$durText}" : "Quay mặt / Không nhìn trực diện{$durText}"),
+                    'description' => $msg ?: 'AI phát hiện thí sinh quay đầu liên tục trong thời gian thi (hành vi bất thường).',
+                    'badge' => 'bg-rose-100 text-rose-800 border-rose-200',
                     'icon' => 'visibility_off',
-                    'severity' => 'medium'
+                    'severity' => 'high'
                 ];
             case 'suspicious_device':
                 return [

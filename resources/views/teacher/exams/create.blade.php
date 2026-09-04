@@ -163,44 +163,54 @@
                             <label class="flex items-start p-3 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5">
                                 <input type="checkbox" name="require_face_verification" value="1" checked class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
                                 <div>
-                                    <span class="block text-xs font-bold text-indigo-900">Xác thực Khuôn mặt (Face ID ArcFace)</span>
-                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Bắt buộc quét khuôn mặt &ge; 70% trước khi cấp đề thi</span>
+                                    <span class="block text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                        Nhận diện khuôn mặt để vào thi (Face ID)
+                                    </span>
+                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Bắt buộc quét nhận diện khuôn mặt khớp với hồ sơ gốc trước khi được cấp đề thi</span>
                                 </div>
                             </label>
 
-                            <label class="flex items-start p-3 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5">
-                                <input type="checkbox" name="enable_proctor_camera" id="toggle_proctor_camera" value="1" checked onchange="document.getElementById('proctor_interval_box').style.display = this.checked ? 'block' : 'none'" class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4">
-                                <div>
-                                    <span class="block text-xs font-bold text-indigo-900">Giám sát Camera AI định kỳ (YOLO + ArcFace)</span>
-                                    <span class="block text-[11px] text-gray-500 mt-0.5 leading-tight">Chụp ảnh định kỳ tự động phân tích vật thể & đối soát hồ sơ gốc</span>
-                                </div>
-                            </label>
-
-                            <!-- Thiết lập thời gian chụp ảnh mỗi lần -->
-                            <div id="proctor_interval_box" class="sm:col-span-2 p-3.5 bg-gradient-to-r from-indigo-50/90 to-blue-50/90 rounded-xl border border-indigo-200 shadow-xs transition-all">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <!-- Khối Camera AI & Chu kỳ chụp định kỳ: Nằm ngang nhau trên Desktop -->
+                            <div id="proctor_camera_container" class="sm:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-stretch">
+                                <!-- Cột trái: Camera giám sát gian lận thời gian thực -->
+                                <label id="proctor_cam_card" class="flex items-start p-3.5 bg-white rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer gap-2.5 h-full shadow-2xs">
+                                    <input type="checkbox" name="enable_proctor_camera" id="toggle_proctor_camera" value="1" checked onchange="toggleProctorCameraSetting(this.checked)" class="anti-cheat-sub mt-0.5 text-indigo-600 focus:ring-indigo-500 rounded text-sm w-4 h-4 shrink-0">
                                     <div>
-                                        <label for="proctor_interval_seconds" class="block text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                            Thời gian chụp ảnh mỗi lần (Chu kỳ chụp)
-                                        </label>
-                                        <p class="text-[11px] text-indigo-700/80 mt-0.5">Khoảng thời gian hệ thống tự động chụp webcam thí sinh để YOLO phân tích & InsightFace đối soát khuôn mặt</p>
+                                        <span class="block text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                            Camera giám sát gian lận thời gian thực
+                                        </span>
+                                        <span class="block text-[11px] text-gray-500 mt-1 leading-relaxed">Bật webcam góc màn hình, AI giám sát trực tiếp (0/nhiều người, quay mặt quá lâu) & tự động chụp ảnh gửi giảng viên</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="relative w-36">
-                                            <input type="number" id="proctor_interval_seconds" name="proctor_interval_seconds" min="15" max="1800" step="5" value="{{ old('proctor_interval_seconds', 120) }}" class="w-full px-3 py-1.5 text-xs font-bold text-indigo-900 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-right pr-10 shadow-xs">
-                                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-indigo-500 font-semibold pointer-events-none">giây</span>
+                                </label>
+
+                                <!-- Cột phải: Chu kỳ chụp ảnh giám sát định kỳ -->
+                                <div id="proctor_interval_box" class="p-3.5 bg-gradient-to-r from-indigo-50/90 to-blue-50/90 rounded-xl border border-indigo-200 shadow-xs transition-all h-full flex flex-col justify-between">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                        <div>
+                                            <label for="proctor_interval_seconds" class="block text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                Chu kỳ chụp ảnh giám sát định kỳ
+                                            </label>
+                                            <p class="text-[11px] text-indigo-700/80 mt-0.5">Khoảng thời gian tự động chụp webcam thí sinh gửi về để AI phân tích</p>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <div class="relative w-32">
+                                                <input type="number" id="proctor_interval_seconds" name="proctor_interval_seconds" min="15" max="1800" step="5" value="{{ old('proctor_interval_seconds', 120) }}" class="w-full px-2.5 py-1.5 text-xs font-bold text-indigo-900 bg-white border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-right pr-9 shadow-xs">
+                                                <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-indigo-500 font-semibold pointer-events-none">giây</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-indigo-200/60 flex-wrap">
-                                    <span class="text-[11px] font-bold text-indigo-700 mr-1">Chọn nhanh:</span>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=30" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">30 giây</button>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=60" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">1 phút (60s)</button>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=90" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">1.5 phút (90s)</button>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=120" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">2 phút (120s)</button>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=180" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">3 phút (180s)</button>
-                                    <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=300" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">5 phút (300s)</button>
+                                    <div class="flex items-center gap-1.5 mt-2 pt-2 border-t border-indigo-200/60 flex-wrap">
+                                        <span class="text-[11px] font-bold text-indigo-700 mr-0.5">Chọn nhanh:</span>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=30" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">30s</button>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=60" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">60s (1p)</button>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=90" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">90s</button>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=120" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">120s (2p)</button>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=180" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">180s (3p)</button>
+                                        <button type="button" onclick="document.getElementById('proctor_interval_seconds').value=300" class="px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 rounded-md border border-indigo-200 shadow-2xs transition-all cursor-pointer">300s (5p)</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -869,6 +879,19 @@
             }
         }
 
+        function toggleProctorCameraSetting(isChecked) {
+            const intervalBox = document.getElementById('proctor_interval_box');
+            const container = document.getElementById('proctor_camera_container');
+            if (!intervalBox) return;
+            if (isChecked) {
+                intervalBox.style.display = '';
+                if (container) container.classList.add('lg:grid-cols-2');
+            } else {
+                intervalBox.style.display = 'none';
+                if (container) container.classList.remove('lg:grid-cols-2');
+            }
+        }
+
         function toggleAllAntiCheat(isEnabled) {
             const container = document.getElementById('antiCheatSubOptions');
             const checkboxes = container.querySelectorAll('.anti-cheat-sub');
@@ -885,6 +908,7 @@
             } else {
                 container.classList.add('opacity-40', 'pointer-events-none');
             }
+            toggleProctorCameraSetting(isEnabled);
         }
     </script>
 @endsection

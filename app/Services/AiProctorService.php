@@ -13,7 +13,7 @@ class AiProctorService
     public function __construct()
     {
         $this->baseUrl = rtrim(config('services.ai_proctor.url', 'http://127.0.0.1:5001'), '/');
-        $this->defaultThreshold = (float) config('services.ai_proctor.threshold', 70.0);
+        $this->defaultThreshold = (float) config('services.ai_proctor.threshold', 65.0);
     }
 
     /**

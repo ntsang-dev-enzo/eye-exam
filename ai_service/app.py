@@ -225,8 +225,10 @@ def verify_face():
     data = request.get_json(force=True)
     probe_b64 = data.get('image')
     enrolled_embedding = data.get('enrolled_embedding')
-    # Default threshold 70.0%
-    threshold = float(data.get('threshold', 70.0))
+    # Default threshold 65.0% (yêu cầu tỉ lệ trên 65%)
+    threshold = float(data.get('threshold', 65.0))
+    if threshold < 65.0:
+        threshold = 65.0
 
     if not probe_b64 or not enrolled_embedding:
         return jsonify({'error': 'Thiếu ảnh quét hoặc dữ liệu khuôn mặt đã đăng ký.'}), 400
@@ -432,17 +434,15 @@ def verify_face():
 
     similarity_percent = round(max(0.0, min(100.0, cosine_sim * 100.0)), 1)
     
-    # Adaptive threshold based on face distance:
-    # When sitting further away (0.20 <= face_h_ratio < 0.28), resolution is lower, threshold is 50.0%
-    # When sitting close up (face_h_ratio >= 0.28), threshold is 55.0%
-    effective_threshold = 50.0 if face_h_ratio < 0.28 else 55.0
-    matched = bool(similarity_percent >= effective_threshold)
+    # Yêu cầu xác minh khuôn mặt cần tỉ lệ trên 65%
+    effective_threshold = max(65.0, float(data.get('threshold', 65.0)))
+    matched = bool(similarity_percent >= effective_threshold and similarity_percent > 65.0)
 
     if not matched:
-        if face_h_ratio < 0.28 and similarity_percent >= 38.0:
-            msg = f'Khuôn mặt ở khoảng cách xa camera làm giảm độ nét ({similarity_percent}%). Vui lòng ngồi gần camera hơn!'
+        if face_h_ratio < 0.28 and similarity_percent < 65.0:
+            msg = f'Khuôn mặt ở cự ly xa camera ({similarity_percent}% < {effective_threshold}%). Vui lòng ngồi gần camera hơn, đủ ánh sáng và nhìn thẳng!'
         else:
-            msg = f'Khuôn mặt không trùng khớp với ảnh đăng ký ({similarity_percent}% < {effective_threshold}%). Yêu cầu đúng thí sinh làm bài!'
+            msg = f'Khuôn mặt không trùng khớp với ảnh đăng ký!'
 
         return jsonify({
             'success': True,
@@ -458,7 +458,7 @@ def verify_face():
         'matched': True,
         'similarity': similarity_percent,
         'threshold': effective_threshold,
-        'message': f'Xác thực thành công! Khuôn mặt chuẩn tâm, rõ nét và trùng khớp {similarity_percent}% (Đạt yêu cầu).',
+        'message': f'Xác thực thành công! Khuôn mặt chuẩn tâm, rõ nét và trùng khớp {similarity_percent}% (Đạt yêu cầu trên 65%).',
         'bbox': [int(x) for x in face.bbox]
     })
 
@@ -603,11 +603,10 @@ def analyze_proctor_snapshot():
             if is_too_far:
                 violations.append({
                     'type': 'too_far',
-                    'severity': 'medium',
+                    'severity': 'high',
                     'message': 'Thí sinh ngồi quá xa camera (ngoài cự ly chuẩn). Vui lòng ngồi lại gần màn hình!'
                 })
-                if status != 'violation':
-                    status = 'warning'
+                status = 'violation'
 
             # 2.2 Centering Check ("người phải ở trung tâm ảnh")
             face_cx = (primary_face.bbox[0] + primary_face.bbox[2]) / 2.0 / float(w)
@@ -615,11 +614,10 @@ def analyze_proctor_snapshot():
             if face_cx < 0.18 or face_cx > 0.82 or face_cy < 0.10 or face_cy > 0.90:
                 violations.append({
                     'type': 'off_center',
-                    'severity': 'medium',
+                    'severity': 'high',
                     'message': 'Thí sinh ngồi lệch khỏi trung tâm camera. Yêu cầu ngồi ở vị trí chính giữa màn hình!'
                 })
-                if status != 'violation':
-                    status = 'warning'
+                status = 'violation'
 
             # 2.3 Blurriness / Clarity Check ("rõ mặt của sinh viên")
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
@@ -631,9 +629,11 @@ def analyze_proctor_snapshot():
                 if blur_score < 24.0:
                     violations.append({
                         'type': 'face_blur',
-                        'severity': 'low',
+                        'severity': 'medium',
                         'message': 'Hình ảnh khuôn mặt bị mờ hoặc thiếu sáng, không rõ mặt thí sinh.'
                     })
+                    if status != 'violation':
+                        status = 'warning'
 
             # 2.4 Direct Frontal Gaze
             if hasattr(primary_face, 'kps') and primary_face.kps is not None and len(primary_face.kps) >= 5:
@@ -672,13 +672,12 @@ def analyze_proctor_snapshot():
                 if gaze_message:
                     violations.append({
                         'type': 'looking_away',
-                        'severity': 'medium',
+                        'severity': 'high',
                         'gaze_status': gaze_status,
                         'message': gaze_message,
                         'details': gaze_info
                     })
-                    if status != 'violation':
-                        status = 'warning'
+                    status = 'violation'
 
             # 2.5 Identity Verification (InsightFace ArcFace with Dual Profile + Entry Verification Matching)
             rec_model = face_app.models.get('recognition')

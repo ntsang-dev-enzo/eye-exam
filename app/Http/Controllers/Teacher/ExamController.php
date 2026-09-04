@@ -221,13 +221,61 @@ class ExamController extends Controller
         return redirect()->route('teacher.exams.index')->with('success', 'Cập nhật trạng thái thành công!');
     }
 
+    public function updateQuickSettings(Request $request, Exam $exam)
+    {
+        if ($exam->created_by !== auth()->id()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Bạn không có quyền sửa đề thi này.'], 403);
+            }
+            abort(403, 'Bạn không có quyền sửa đề thi này.');
+        }
+
+        $data = [];
+        if ($request->has('enable_proctor_camera')) {
+            $data['enable_proctor_camera'] = filter_var($request->input('enable_proctor_camera'), FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($request->has('require_face_verification')) {
+            $data['require_face_verification'] = filter_var($request->input('require_face_verification'), FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($request->has('proctor_interval_seconds')) {
+            $interval = (int) $request->input('proctor_interval_seconds');
+            if ($interval >= 15 && $interval <= 1800) {
+                $data['proctor_interval_seconds'] = $interval;
+            }
+        }
+
+        if (!empty($data)) {
+            $exam->update($data);
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật cài đặt giám sát thành công!',
+                'exam' => [
+                    'id' => $exam->id,
+                    'enable_proctor_camera' => (bool) $exam->enable_proctor_camera,
+                    'require_face_verification' => (bool) $exam->require_face_verification,
+                    'proctor_interval_seconds' => (int) ($exam->proctor_interval_seconds ?? 120),
+                ]
+            ]);
+        }
+
+        return back()->with('success', 'Cập nhật cài đặt giám sát thành công!');
+    }
+
     public function results(Exam $exam)
     {
         if ($exam->created_by !== auth()->id()) {
             abort(403, 'Bạn không có quyền xem kết quả đề thi này.');
         }
 
-        $attempts = ExamAttempt::with('student')
+        $attempts = ExamAttempt::with([
+                'student',
+                'proctorSnapshots' => function($q) {
+                    $q->orderBy('captured_at', 'desc');
+                }
+            ])
             ->where('exam_id', $exam->id)
             ->where('status', 'submitted')
             ->get();
@@ -365,6 +413,8 @@ class ExamController extends Controller
             'face_absent' => $logs->where('event_type', 'face_absent')->count(),
             'face_mismatches' => $logs->where('event_type', 'face_mismatch')->count(),
             'total_snapshots' => $snapshots->count(),
+            'avg_snapshot_similarity' => round($attempt->proctorSnapshots->whereNotNull('face_similarity')->avg('face_similarity') ?? 0, 1),
+            'latest_snapshot_similarity' => $attempt->proctorSnapshots->whereNotNull('face_similarity')->first()?->face_similarity,
         ];
 
         return response()->json([

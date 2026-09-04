@@ -89,6 +89,8 @@ class FaceAuthController extends Controller
             'face_registered_at' => now(),
         ]);
 
+        session()->flash('success', 'Đăng ký nhận diện khuôn mặt thành công! Bạn đã đủ điều kiện tham gia các kỳ thi.');
+
         return response()->json([
             'success' => true,
             'message' => 'Đăng ký khuôn mặt thành công! Danh tính của bạn đã được lưu trữ an toàn.',
@@ -111,7 +113,7 @@ class FaceAuthController extends Controller
             return response()->json([
                 'success' => false,
                 'need_registration' => true,
-                'message' => 'Bạn chưa đăng ký khuôn mặt trên hệ thống. Vui lòng đăng ký trước khi vào thi.',
+                'message' => 'Bạn chưa cập nhật khuôn mặt trên hệ thống. Bắt buộc phải đăng ký khuôn mặt mới được tham gia thi.',
                 'register_url' => route('student.face.register'),
             ], 403);
         }
@@ -136,17 +138,18 @@ class FaceAuthController extends Controller
             }
         }
 
-        // Standard ArcFace threshold (55.0%) to accommodate desk distance variations while blocking imposters (<20%)
-        $threshold = 55.0;
+        // Yêu cầu tỉ lệ xác minh khuôn mặt trên 65%
+        $threshold = (float) config('services.ai_proctor.threshold', 65.0);
         $result = $this->aiProctor->verifyFace($probeImage, $enrolledEmbedding, $threshold, $enrolledImageBase64);
 
-        if (!$result['success'] || !$result['matched']) {
+        if (!$result['success'] || !$result['matched'] || ($result['similarity'] ?? 0) <= 65.0) {
+            $sim = $result['similarity'] ?? 0;
             return response()->json([
                 'success' => false,
                 'matched' => false,
-                'similarity' => $result['similarity'] ?? 0,
+                'similarity' => $sim,
                 'threshold' => $threshold,
-                'message' => $result['message'] ?: "Khuôn mặt không khớp ({$result['similarity']}% < {$threshold}%). Vui lòng thử lại!",
+                'message' => $result['message'] ?: "Khuôn mặt không trùng khớp với ảnh đăng ký ({$sim}% < {$threshold}%). Yêu cầu đúng thí sinh và đạt tỉ lệ trên 65%!",
             ]);
         }
 

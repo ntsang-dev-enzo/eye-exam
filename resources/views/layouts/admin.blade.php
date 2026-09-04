@@ -118,9 +118,13 @@
                         {{ substr(auth()->user()->name, 0, 1) }}
                     @endif
                 </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-white truncate leading-tight">{{ auth()->user()->name }}</p>
+                    <p class="text-[11px] text-slate-400 truncate leading-tight">{{ auth()->user()->email }}</p>
+                </div>
                 <form method="POST" action="{{ route('logout') }}" class="shrink-0">
                     @csrf
-                    <button type="submit" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Đăng xuất">
+                    <button type="submit" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors" title="Đăng xuất">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>

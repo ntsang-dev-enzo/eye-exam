@@ -322,6 +322,17 @@
 
             const data = await response.json();
 
+            if (data.need_registration) {
+                stopVerifyCamera();
+                scanOverlay.classList.add('hidden');
+                setCircleProgress(0);
+                updateStatusBox('danger', data.message || 'Bạn chưa cập nhật khuôn mặt. Đang chuyển đến trang đăng ký...');
+                setTimeout(() => {
+                    window.location.href = data.register_url || '{{ route("student.face.register") }}';
+                }, 1500);
+                return;
+            }
+
             if (data.success && data.matched) {
                 // SUCCESS: Seamless instant entry without showing % match
                 updateStatusBox('success', 'Xác thực thành công, đang vào bài thi...');

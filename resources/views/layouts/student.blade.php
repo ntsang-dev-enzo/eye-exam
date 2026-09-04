@@ -66,8 +66,8 @@
             <div class="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/60 transition-colors">
                 <a href="{{ route('student.profile') }}" class="flex items-center gap-2.5 flex-1 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0 overflow-hidden border border-blue-200 text-xs">
-                        @if(auth()->user()->frontal_face_url)
-                            <img src="{{ auth()->user()->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
+                        @if(auth()->user()->avatar_url)
+                            <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
                         @else
                             {{ substr(auth()->user()->name, 0, 1) }}
                         @endif
@@ -128,8 +128,8 @@
 
                 <!-- Avatar on Right -->
                 <a href="{{ route('student.profile') }}" class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs overflow-hidden border border-blue-500 shadow-xs shrink-0" title="Trang cá nhân">
-                    @if(auth()->user()->frontal_face_url)
-                        <img src="{{ auth()->user()->frontal_face_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
+                    @if(auth()->user()->avatar_url)
+                        <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
                     @else
                         {{ substr(auth()->user()->name, 0, 1) }}
                     @endif
@@ -137,9 +137,78 @@
             </div>
         </header>
 
+        <!-- Persistent Warning Banner if Face Not Registered -->
+        @if(auth()->check() && !auth()->user()->face_registered && !request()->routeIs('student.face.*'))
+        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-4 py-3 sm:px-6 shadow-sm flex items-center justify-between gap-3 flex-wrap z-20 shrink-0 border-b border-amber-600">
+            <div class="flex items-center gap-3">
+                <span class="p-1.5 bg-white/20 rounded-xl shrink-0 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </span>
+                <div class="text-xs sm:text-sm font-medium leading-tight">
+                    <strong class="font-bold">Lưu ý quan trọng:</strong> Tài khoản của bạn chưa cập nhật nhận diện khuôn mặt. Bạn cần hoàn tất cập nhật khuôn mặt để có thể tham gia các kỳ thi!
+                </div>
+            </div>
+            <a href="{{ route('student.face.register') }}" class="px-4 py-1.5 bg-white hover:bg-amber-50 text-amber-950 text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 shrink-0 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Cập nhật khuôn mặt ngay</span>
+            </a>
+        </div>
+        @endif
+
         <!-- Main Scrollable Content -->
         <main class="flex-1 overflow-y-auto p-6 lg:p-8">
             <div class="max-w-6xl mx-auto">
+                <!-- Global Flash Notifications -->
+                @if(session('success'))
+                <div class="mb-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold flex items-center justify-between gap-3 shadow-2xs">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </span>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                </div>
+                @endif
+
+                @if(session('error') || $errors->any())
+                <div class="mb-5 p-4 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-800 text-xs font-semibold flex items-start gap-3 shadow-2xs">
+                    <span class="w-7 h-7 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                    <div class="space-y-1">
+                        @if(session('error'))
+                            <p class="font-bold text-rose-900">{{ session('error') }}</p>
+                        @endif
+                        @foreach($errors->all() as $err)
+                            <p>{{ $err }}</p>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                @if(session('warning'))
+                <div class="mb-5 p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-semibold flex items-center justify-between gap-3 shadow-2xs">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </span>
+                        <span>{{ session('warning') }}</span>
+                    </div>
+                    <a href="{{ route('student.face.register') }}" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg shrink-0 transition-colors">
+                        Đăng ký ngay
+                    </a>
+                </div>
+                @endif
+
+                @if(session('info'))
+                <div class="mb-5 p-4 rounded-2xl bg-blue-50 border border-blue-200/80 text-blue-800 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
+                    <span class="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                    <span>{{ session('info') }}</span>
+                </div>
+                @endif
+
                 @yield('content')
             </div>
 

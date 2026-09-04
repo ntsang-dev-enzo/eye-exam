@@ -140,10 +140,10 @@ class ExamController extends Controller
             }
         }
 
-        // Check if exam requires face verification and student has not registered yet
-        if ($exam->require_face_verification && !auth()->user()->face_registered) {
+        // Bắt buộc sinh viên phải có khuôn mặt mới được tham gia thi
+        if (!auth()->user()->face_registered) {
             return redirect()->route('student.face.register')
-                ->with('error', 'Kỳ thi này yêu cầu xác thực khuôn mặt. Vui lòng đăng ký Face ID trước khi tham gia.');
+                ->with('error', 'Bạn chưa cập nhật khuôn mặt. Hệ thống bắt buộc phải đăng ký nhận diện khuôn mặt mới được tham gia thi!');
         }
 
         // Create new attempt
@@ -159,6 +159,12 @@ class ExamController extends Controller
 
     public function take(Exam $exam)
     {
+        // Bắt buộc sinh viên phải có khuôn mặt mới được làm bài thi
+        if (!auth()->user()->face_registered) {
+            return redirect()->route('student.face.register')
+                ->with('error', 'Bạn chưa cập nhật khuôn mặt. Hệ thống bắt buộc phải đăng ký nhận diện khuôn mặt mới được làm bài thi!');
+        }
+
         $attempt = ExamAttempt::where('exam_id', $exam->id)
             ->where('student_id', auth()->id())
             ->where('status', 'in_progress')
@@ -499,13 +505,22 @@ class ExamController extends Controller
                 'tab_switch', 'window_blur', 'window_focus',
                 'fullscreen_exit', 'fullscreen_enter',
                 'copy', 'paste', 'cut', 'select_all', 'right_click',
-                'page_reload', 'connection_lost', 'connection_restored'
+                'page_reload', 'connection_lost', 'connection_restored',
+                'face_absent', 'multiple_persons', 'face_mismatch',
+                'looking_away', 'head_turned_sustained', 'too_far', 'off_center',
+                'phone_detected', 'suspicious_device', 'suspicious_object', 'proctor_violation'
             ];
 
             $savedEventType = in_array($eventType, $validEvents) ? $eventType : 'tab_switch';
 
             // Increment violation warning counters
-            $isViolation = in_array($eventType, ['fullscreen_exit', 'tab_switch', 'window_blur', 'copy', 'paste', 'cut', 'right_click', 'page_reload', 'print_screen', 'select_all']);
+            $isViolation = in_array($eventType, [
+                'fullscreen_exit', 'tab_switch', 'window_blur', 'copy', 'paste', 'cut',
+                'right_click', 'page_reload', 'print_screen', 'select_all',
+                'face_absent', 'multiple_persons', 'face_mismatch',
+                'looking_away', 'head_turned_sustained', 'too_far', 'off_center',
+                'phone_detected', 'suspicious_device', 'suspicious_object', 'proctor_violation'
+            ]);
             
             if ($isViolation) {
                 $attempt->increment('cheat_warnings');
@@ -515,12 +530,56 @@ class ExamController extends Controller
                 $attempt->increment('out_of_screen_time', $duration);
             }
 
+            // Save snapshot evidence if sent from client (e.g. sustained head turn)
+            $snapshotPath = null;
+            if ($request->filled('snapshot')) {
+                try {
+                    $snapData = $request->input('snapshot');
+                    if (str_contains($snapData, ',')) {
+                        $snapData = explode(',', $snapData)[1];
+                    }
+                    $binary = base64_decode($snapData);
+                    if ($binary) {
+                        $folder = "proctor/{$attempt->id}";
+                        $fileName = "{$folder}/snap_turn_" . time() . "_" . \Illuminate\Support\Str::random(5) . ".enc";
+                        \App\Services\SecureMediaService::storeEncrypted($fileName, $binary, 'local');
+                        $snapshotPath = $fileName;
+
+                        // Đồng bộ lưu vào ExamProctorSnapshot để hiển thị ngay trong Bộ sưu tập ảnh AI của Giảng viên
+                        try {
+                            \App\Models\ExamProctorSnapshot::create([
+                                'attempt_id' => $attempt->id,
+                                'student_id' => auth()->id(),
+                                'image_path' => $snapshotPath,
+                                'status' => 'violation',
+                                'violations' => [
+                                    [
+                                        'type' => $savedEventType,
+                                        'severity' => in_array($savedEventType, ['multiple_persons', 'face_absent']) ? 'high' : 'medium',
+                                        'message' => is_array($eventData) && !empty($eventData['message']) ? $eventData['message'] : 'Phát hiện hành vi bất thường qua camera',
+                                    ]
+                                ],
+                                'detections' => [],
+                                'face_similarity' => null,
+                                'details' => is_array($eventData) && !empty($eventData['message']) ? $eventData['message'] : 'Hệ thống tự động chụp ảnh bất thường gửi giảng viên',
+                                'captured_at' => now(),
+                            ]);
+                        } catch (\Exception $ex) {
+                            \Log::warning('Failed creating ExamProctorSnapshot from logCheat: ' . $ex->getMessage());
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed saving anti-cheat turn snapshot: ' . $e->getMessage());
+                }
+            }
+
             // Create anti cheat log
             AntiCheatLog::create([
                 'attempt_id' => $attempt->id,
                 'student_id' => auth()->id(),
                 'event_type' => $savedEventType,
                 'event_data' => $eventData ?: ($eventType !== $savedEventType ? ['raw_event' => $eventType] : null),
+                'snapshot_path' => $snapshotPath,
                 'duration_seconds' => $duration > 0 ? $duration : null,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -569,6 +628,12 @@ class ExamController extends Controller
             return response()->json(['error' => 'Không có dữ liệu ảnh.'], 400);
         }
 
+        $triggerSource = $request->input('trigger_source', 'periodic_timer');
+        $anomalyType = $request->input('anomaly_type');
+        $anomalyDetails = $request->input('details');
+        $faceCount = $request->input('face_count') !== null ? intval($request->input('face_count')) : null;
+        $durationSeconds = $request->input('duration_seconds');
+
         $student = $attempt->student;
         $enrolledEmbedding = $student && !empty($student->face_embedding)
             ? (is_string($student->face_embedding) ? json_decode($student->face_embedding, true) : $student->face_embedding)
@@ -585,7 +650,12 @@ class ExamController extends Controller
 
         // Call AI Service with dual reference comparison (enrolled profile + entry verification photo)
         $aiService = app(\App\Services\AiProctorService::class);
-        $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 55.0, $verificationImageBase64);
+        $result = [];
+        try {
+            $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 55.0, $verificationImageBase64);
+        } catch (\Exception $e) {
+            \Log::warning('AI Proctor analysis error: ' . $e->getMessage());
+        }
 
         // Save encrypted image to private storage: storage/app/private/proctor/{attempt_id}/
         $folder = "proctor/{$attempt->id}";
@@ -602,7 +672,57 @@ class ExamController extends Controller
         $detections = $result['detections'] ?? [];
         $faceSimilarity = $result['face_similarity'] ?? null;
         $summary = $result['summary'] ?? '';
-        $personCount = $result['person_count'] ?? 1;
+        $personCount = $result['person_count'] ?? ($faceCount !== null ? $faceCount : 1);
+
+        // =========================================================
+        // XỬ LÝ VI PHẠM TỪ BROWSER REALTIME FACE DETECTION
+        // =========================================================
+        if (!empty($anomalyType)) {
+            $status = 'violation';
+
+            if ($anomalyType === 'face_absent') {
+                $personCount = 0;
+                $summary = $anomalyDetails ?: 'Camera không phát hiện thấy thí sinh trước màn hình (Vắng mặt)';
+                $hasAbsent = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'face_absent') { $hasAbsent = true; break; }
+                }
+                if (!$hasAbsent) {
+                    $violations[] = [
+                        'type' => 'face_absent',
+                        'severity' => 'high',
+                        'message' => $summary,
+                    ];
+                }
+            } elseif ($anomalyType === 'multiple_persons') {
+                $personCount = $faceCount !== null ? max(2, $faceCount) : 2;
+                $summary = $anomalyDetails ?: "Phát hiện {$personCount} khuôn mặt cùng xuất hiện trước camera (Nghi vấn có người trợ giúp)";
+                $hasMulti = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'multiple_persons') { $hasMulti = true; break; }
+                }
+                if (!$hasMulti) {
+                    $violations[] = [
+                        'type' => 'multiple_persons',
+                        'severity' => 'critical',
+                        'message' => $summary,
+                    ];
+                }
+            } elseif ($anomalyType === 'looking_away') {
+                $summary = $anomalyDetails ?: 'Thí sinh quay đầu không nhìn trực diện màn hình liên tục';
+                $hasTurn = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'looking_away') { $hasTurn = true; break; }
+                }
+                if (!$hasTurn) {
+                    $violations[] = [
+                        'type' => 'looking_away',
+                        'severity' => 'medium',
+                        'message' => $summary,
+                    ];
+                }
+            }
+        }
 
         // Guaranteed log if 2 or more persons are detected
         if ($personCount > 1) {
@@ -649,14 +769,17 @@ class ExamController extends Controller
                     'event_type' => $rawType,
                     'event_data' => [
                         'violation_type' => $rawType,
+                        'message' => $v['message'] ?? $summary,
                         'summary' => $v['message'] ?? $summary,
                         'detections' => $detections,
                         'similarity' => $faceSimilarity,
                         'person_count' => $personCount,
                         'snapshot_id' => $snapshot->id,
                         'snapshot_url' => route('secure.media.snapshot', $snapshot->id),
+                        'trigger_source' => $triggerSource,
                     ],
                     'snapshot_path' => $fileName,
+                    'duration_seconds' => $durationSeconds > 0 ? $durationSeconds : null,
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                     'occurred_at' => now(),

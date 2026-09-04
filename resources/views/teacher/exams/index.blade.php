@@ -98,6 +98,28 @@
                                     @endif
                                 </div>
                                 <p class="text-xs text-gray-500">Môn: <span class="font-medium">{{ $exam->subject->name ?? 'N/A' }}</span></p>
+                                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                    @if($exam->enable_proctor_camera ?? true)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs" title="Camera gian lận thời gian thực: ĐANG BẬT (Chu kỳ {{ $exam->proctor_interval_seconds ?? 120 }}s)">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            📷 Camera AI ({{ $exam->proctor_interval_seconds ?? 120 }}s)
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500" title="Camera gian lận thời gian thực: ĐÃ TẮT">
+                                            📷 Camera: Tắt
+                                        </span>
+                                    @endif
+
+                                    @if($exam->require_face_verification ?? true)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs" title="Nhận diện khuôn mặt vào thi: BẮT BUỘC">
+                                            👤 Face ID vào thi
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500" title="Nhận diện khuôn mặt vào thi: KHÔNG YÊU CẦU">
+                                            👤 Face ID: Tắt
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <p class="text-sm text-gray-700 font-medium">{{ $exam->total_questions }} câu hỏi</p>
