@@ -1,69 +1,230 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard Quản Trị Hệ Thống')
+@section('title', 'Tổng quan Quản trị')
 
 @section('content')
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Stat 1 -->
-        <div class="bg-white rounded-2xl p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex items-center gap-4 relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 opacity-10 text-blue-600">
-                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600 relative z-10">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            </div>
-            <div class="relative z-10">
-                <p class="text-sm font-medium text-gray-500">Tổng Số Người Dùng</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">1,245</p>
-            </div>
+<div class="space-y-6">
+    <!-- Page Header with Primary Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Tổng quan hệ thống</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Thống kê hoạt động, đề thi khảo thí và cơ sở dữ liệu đào tạo toàn trường</p>
         </div>
-
-        <!-- Stat 2 -->
-        <div class="bg-white rounded-2xl p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex items-center gap-4 relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 opacity-10 text-emerald-600">
-                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600 relative z-10">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-            </div>
-            <div class="relative z-10">
-                <p class="text-sm font-medium text-gray-500">Tổng Số Môn Học</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">42</p>
-            </div>
-        </div>
-
-        <!-- Stat 3 -->
-        <div class="bg-white rounded-2xl p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex items-center gap-4 relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 opacity-10 text-indigo-600">
-                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600 relative z-10">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            </div>
-            <div class="relative z-10">
-                <p class="text-sm font-medium text-gray-500">Kỳ Thi Hệ Thống</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">156</p>
-            </div>
-        </div>
-        
-        <!-- Stat 4 -->
-        <div class="bg-white rounded-2xl p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 flex items-center gap-4 relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 opacity-10 text-amber-600">
-                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
-            </div>
-            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 text-amber-600 relative z-10">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            </div>
-            <div class="relative z-10">
-                <p class="text-sm font-medium text-gray-500">Giảng Viên</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">45</p>
-            </div>
+        <div class="flex items-center gap-2.5">
+            <a href="{{ route('admin.subjects.create') }}" 
+               class="inline-flex items-center h-9 px-3.5 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-md border border-slate-200 transition-colors">
+                <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Tạo môn học
+            </a>
+            <a href="{{ route('admin.khoa-hoc.create') }}" 
+               class="inline-flex items-center h-9 px-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Tạo khóa học
+            </a>
         </div>
     </div>
 
-    <!-- Info Box -->
-    <div class="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-6">
-        <h3 class="font-bold text-gray-900 mb-4 text-lg">Chào mừng đến với trang quản trị</h3>
-        <p class="text-gray-600">Trang quản trị cho phép bạn quản lý các tài khoản người dùng, đơn vị tổ chức và thiết lập cấu hình chung của hệ thống. Bạn có đầy đủ quyền thao tác với mọi dữ liệu.</p>
+    <!-- Clean Metric Strip (SaaS Style, Subtle Borders, No Watermarks) -->
+    <div class="bg-white border border-slate-200 rounded-lg grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <!-- Metric 1: Users -->
+        <div class="p-5">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng người dùng</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ number_format($totalUsers) }}</p>
+            <p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5">
+                <span class="font-medium text-slate-700">{{ $studentCount }}</span> sinh viên
+                <span class="text-slate-300">•</span>
+                <span class="font-medium text-slate-700">{{ $teacherCount }}</span> giảng viên
+            </p>
+        </div>
+
+        <!-- Metric 2: Subjects -->
+        <div class="p-5">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Môn học</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ number_format($totalSubjects) }}</p>
+            <p class="text-xs text-slate-500 mt-1.5">
+                <span class="font-medium text-slate-700">{{ $activeSubjects }}</span> môn đang hoạt động
+            </p>
+        </div>
+
+        <!-- Metric 3: Courses & Classes -->
+        <div class="p-5">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Khóa học & Lớp</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ number_format($totalCourses) }}</p>
+            <p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5">
+                <span class="font-medium text-slate-700">{{ $totalCourses }}</span> khóa học
+                <span class="text-slate-300">•</span>
+                <span class="font-medium text-slate-700">{{ $totalClasses }}</span> lớp học
+            </p>
+        </div>
+
+        <!-- Metric 4: Exams -->
+        <div class="p-5">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đề thi khảo thí</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ number_format($totalExams) }}</p>
+            <p class="text-xs text-slate-500 mt-1.5">
+                <span class="font-medium text-blue-700">{{ $publishedExams }}</span> đề đang mở thi
+            </p>
+        </div>
     </div>
+
+    <!-- Main Section: Recent Exams Table -->
+    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900">Đề thi gần đây</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Danh sách các đề thi mới nhất được tạo trong hệ thống</p>
+            </div>
+            <a href="{{ route('admin.exams.index') }}" 
+               class="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                Xem tất cả ({{ $totalExams }}) →
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-5">Mã đề</th>
+                        <th class="py-3 px-5">Tên đề thi</th>
+                        <th class="py-3 px-5">Môn học</th>
+                        <th class="py-3 px-5">Người tạo</th>
+                        <th class="py-3 px-5 text-center">Thời lượng</th>
+                        <th class="py-3 px-5 text-center">Trạng thái</th>
+                        <th class="py-3 px-5 text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-sm">
+                    @forelse($recentExams as $exam)
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="py-3 px-5 font-mono text-xs font-semibold text-slate-900">
+                                {{ $exam->code }}
+                            </td>
+                            <td class="py-3 px-5 font-medium text-slate-900">
+                                {{ $exam->title }}
+                            </td>
+                            <td class="py-3 px-5 text-slate-600">
+                                {{ $exam->subject->name ?? '—' }}
+                            </td>
+                            <td class="py-3 px-5 text-slate-600">
+                                {{ $exam->creator->name ?? '—' }}
+                            </td>
+                            <td class="py-3 px-5 text-center font-mono text-xs text-slate-700">
+                                {{ $exam->duration }} phút
+                            </td>
+                            <td class="py-3 px-5 text-center">
+                                @if($exam->status === 'published')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Đang mở
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                        Đóng
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-5 text-right">
+                                <a href="{{ route('admin.exams.monitor', $exam) }}" 
+                                   class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-700">
+                                    Giám sát
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-sm text-slate-500">
+                                Chưa có đề thi nào trong hệ thống
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Secondary Section: Recent Courses Table -->
+    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900">Khóa học & Học kỳ đào tạo</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Các khóa học đang được phân bổ trong hệ thống</p>
+            </div>
+            <a href="{{ route('admin.khoa-hoc.index') }}" 
+               class="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                Xem tất cả ({{ $totalCourses }}) →
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-5">Tên khóa học</th>
+                        <th class="py-3 px-5">Học kỳ</th>
+                        <th class="py-3 px-5">Năm học</th>
+                        <th class="py-3 px-5 text-center">Số môn học</th>
+                        <th class="py-3 px-5 text-center">Tổng tín chỉ</th>
+                        <th class="py-3 px-5 text-center">Trạng thái</th>
+                        <th class="py-3 px-5 text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-sm">
+                    @forelse($recentCourses as $course)
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="py-3 px-5 font-semibold text-slate-900">
+                                <a href="{{ route('admin.khoa-hoc.show', $course) }}" class="hover:text-blue-600 transition-colors">
+                                    {{ $course->name }}
+                                </a>
+                            </td>
+                            <td class="py-3 px-5 text-slate-600">
+                                {{ $course->semester }}
+                            </td>
+                            <td class="py-3 px-5 text-slate-600 font-mono text-xs">
+                                {{ $course->academic_year }}
+                            </td>
+                            <td class="py-3 px-5 text-center text-slate-700 font-medium">
+                                {{ $course->subjects_count }} môn
+                            </td>
+                            <td class="py-3 px-5 text-center">
+                                <span class="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                    {{ $course->total_credits }} TC
+                                </span>
+                            </td>
+                            <td class="py-3 px-5 text-center">
+                                @if($course->status === 'active')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Hoạt động
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                        Tạm dừng
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-5 text-right">
+                                <div class="flex items-center justify-end gap-3 text-xs">
+                                    <a href="{{ route('admin.khoa-hoc.edit', $course) }}" class="font-medium text-slate-600 hover:text-blue-600">
+                                        Sửa
+                                    </a>
+                                    <a href="{{ route('admin.khoa-hoc.show', $course) }}" class="font-medium text-blue-600 hover:text-blue-700">
+                                        Chi tiết
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-sm text-slate-500">
+                                Chưa có khóa học nào được tạo
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 @endsection

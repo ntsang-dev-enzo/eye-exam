@@ -3,75 +3,115 @@
 @section('title', 'Quản lý Môn học')
 
 @section('content')
-    <div class="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 overflow-hidden">
-        <!-- Header -->
-        <div class="px-6 py-5 border-b border-gray-100">
-            <div class="flex justify-between items-center">
-                <h3 class="font-semibold text-gray-800">Danh sách Môn học</h3>
-                <div class="flex items-center gap-4">
-                    <form action="{{ route('admin.subjects.index') }}" method="GET" class="relative">
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm mã, tên môn..." class="pl-10 pr-4 py-2 border border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 w-64 shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </div>
-                    </form>
-                    <a href="{{ route('admin.subjects.create') }}" class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Thêm môn học
-                    </a>
-                </div>
-            </div>
+<div class="space-y-6">
+    <!-- Top Bar: Title & Primary Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Danh sách Môn học</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Quản lý danh mục học phần, số tín chỉ và mã môn trong toàn hệ thống</p>
         </div>
+        <div>
+            <a href="{{ route('admin.subjects.create') }}" 
+               class="inline-flex items-center h-9 px-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-xs transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Thêm môn học
+            </a>
+        </div>
+    </div>
 
-        @if(session('success'))
-            <div class="m-6 p-4 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-                {{ session('success') }}
+    @if(session('success'))
+        <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-md flex items-center justify-between text-emerald-800 text-sm font-medium">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{{ session('success') }}</span>
             </div>
-        @endif
+            <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    @endif
 
-        <!-- Table -->
+    <!-- Search & Filter Bar -->
+    <div class="bg-white rounded-lg border border-slate-200 p-4">
+        <form action="{{ route('admin.subjects.index') }}" method="GET" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="relative flex-1 max-w-md">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm theo mã môn hoặc tên môn học..." 
+                    class="w-full h-10 pl-9 pr-3 bg-white border border-slate-200 rounded-md text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            @if(request('search'))
+                <a href="{{ route('admin.subjects.index') }}" 
+                   class="inline-flex items-center h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-md transition-colors">
+                    Xóa tìm kiếm
+                </a>
+            @endif
+        </form>
+    </div>
+
+    <!-- Table Container -->
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-slate-50/50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-gray-100">
-                        <th class="px-6 py-4">Mã Môn</th>
-                        <th class="px-6 py-4">Tên Môn Học</th>
-                        <th class="px-6 py-4 text-center">Tín chỉ</th>
-                        <th class="px-6 py-4">Mô tả</th>
-                        <th class="px-6 py-4">Trạng thái</th>
-                        <th class="px-6 py-4 text-right">Thao tác</th>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-5">Mã Môn</th>
+                        <th class="py-3 px-5">Tên Môn Học</th>
+                        <th class="py-3 px-5 text-center">Tín chỉ</th>
+                        <th class="py-3 px-5">Mô tả</th>
+                        <th class="py-3 px-5 text-center">Trạng thái</th>
+                        <th class="py-3 px-5 text-right">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-slate-200 text-sm">
                     @forelse($subjects as $subject)
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ $subject->code }}</td>
-                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ $subject->name }}</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-lg border border-indigo-100 font-mono">
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="py-3.5 px-5 font-mono text-xs font-semibold text-slate-900">
+                                {{ $subject->code }}
+                            </td>
+                            <td class="py-3.5 px-5 font-semibold text-slate-900">
+                                {{ $subject->name }}
+                            </td>
+                            <td class="py-3.5 px-5 text-center">
+                                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 font-mono font-semibold text-xs rounded border border-blue-200">
                                     {{ $subject->credits ?? 3 }} TC
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-500 line-clamp-1">{{ $subject->description ?? '-' }}</td>
-                            <td class="px-6 py-4">
+                            <td class="py-3.5 px-5 text-slate-500 text-xs max-w-xs truncate">
+                                {{ $subject->description ?? '—' }}
+                            </td>
+                            <td class="py-3.5 px-5 text-center">
                                 @if($subject->status)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Hoạt động</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Hoạt động
+                                    </span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">Tạm khóa</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                        Tạm khóa
+                                    </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="py-3.5 px-5 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('admin.subjects.edit', $subject) }}" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    <a href="{{ route('admin.subjects.edit', $subject) }}" 
+                                       class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" 
+                                       title="Chỉnh sửa">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
                                     </a>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                                Chưa có môn học nào được tạo.
+                            <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                                Chưa có môn học nào được tạo
                             </td>
                         </tr>
                     @endforelse
@@ -79,8 +119,11 @@
             </table>
         </div>
         
-        <div class="px-6 py-4 border-t border-gray-100">
-            {{ $subjects->links() }}
-        </div>
+        @if($subjects->hasPages())
+            <div class="px-5 py-3 border-t border-slate-200 bg-white">
+                {{ $subjects->links() }}
+            </div>
+        @endif
     </div>
+</div>
 @endsection
