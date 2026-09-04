@@ -117,13 +117,9 @@
                             </td>
                             <td class="py-3 px-5 text-center">
                                 @if($exam->status === 'published')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        Đang mở
-                                    </span>
+                                    <span class="text-xs font-medium text-emerald-600">Đang mở</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                        Đóng
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">Đóng</span>
                                 @endif
                             </td>
                             <td class="py-3 px-5 text-right">
@@ -188,20 +184,14 @@
                             <td class="py-3 px-5 text-center text-slate-700 font-medium">
                                 {{ $course->subjects_count }} môn
                             </td>
-                            <td class="py-3 px-5 text-center">
-                                <span class="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                                    {{ $course->total_credits }} TC
-                                </span>
+                            <td class="py-3 px-5 text-center font-mono text-xs font-semibold text-slate-700">
+                                {{ $course->total_credits }} TC
                             </td>
                             <td class="py-3 px-5 text-center">
                                 @if($course->status === 'active')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        Hoạt động
-                                    </span>
+                                    <span class="text-xs font-medium text-emerald-600">Hoạt động</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                        Tạm dừng
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">Tạm dừng</span>
                                 @endif
                             </td>
                             <td class="py-3 px-5 text-right">

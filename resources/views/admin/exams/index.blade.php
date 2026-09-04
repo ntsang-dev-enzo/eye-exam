@@ -95,21 +95,19 @@
                             <!-- Status -->
                             <td class="py-3 px-4 text-center">
                                 @if($exam->status === 'published')
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                         Đang mở
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                        Đã đóng
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">Đã đóng</span>
                                 @endif
                             </td>
 
                             <!-- Monitor Action -->
                             <td class="py-3 px-4 text-right">
-                                <a href="{{ route('admin.exams.monitor', $exam) }}" class="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-md transition-colors" title="Giám sát phòng thi thời gian thực">
-                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <a href="{{ route('admin.exams.monitor', $exam) }}" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors" title="Giám sát phòng thi thời gian thực">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>

@@ -144,17 +144,11 @@
                             <!-- Role -->
                             <td class="py-3 px-4">
                                 @if($user->role === 'teacher')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                                        Giảng viên
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-700">Giảng viên</span>
                                 @elseif($user->role === 'student')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                        Sinh viên
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-700">Sinh viên</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                        {{ $user->role }}
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">{{ $user->role }}</span>
                                 @endif
                             </td>
 
@@ -172,8 +166,8 @@
                                                 <img src="{{ $user->frontal_face_url }}" class="w-7 h-7 rounded object-cover border border-slate-200 shrink-0" alt="Face">
                                             @endif
                                             <div class="space-y-1">
-                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                    <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                                     Đã đăng ký
                                                 </span>
                                                 <form action="{{ route('admin.users.reset-face', $user->id) }}" method="POST" onsubmit="return confirm('Đặt lại Face ID cho sinh viên {{ addslashes($user->name) }}? Sinh viên sẽ được phép quét lại khuôn mặt mới.')">
@@ -186,9 +180,7 @@
                                             </div>
                                         </div>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal text-slate-400 bg-slate-50 border border-slate-200">
-                                            Chưa đăng ký
-                                        </span>
+                                        <span class="text-xs font-normal text-slate-400">Chưa đăng ký</span>
                                     @endif
                                 @else
                                     <span class="text-slate-300 text-xs">-</span>
@@ -198,24 +190,22 @@
                             <!-- Status -->
                             <td class="py-3 px-4">
                                 @if($user->status === 'active')
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                         Hoạt động
                                     </span>
                                 @elseif($user->status === 'inactive')
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
                                         Tạm khóa
                                     </span>
                                 @elseif($user->status === 'locked')
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
                                         Đã khóa
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                        {{ $user->status }}
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">{{ $user->status }}</span>
                                 @endif
                             </td>
 

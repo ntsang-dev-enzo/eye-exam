@@ -77,23 +77,17 @@
                             <td class="py-3.5 px-5 font-semibold text-slate-900">
                                 {{ $subject->name }}
                             </td>
-                            <td class="py-3.5 px-5 text-center">
-                                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 font-mono font-semibold text-xs rounded border border-blue-200">
-                                    {{ $subject->credits ?? 3 }} TC
-                                </span>
+                            <td class="py-3.5 px-5 text-center font-mono text-xs font-semibold text-slate-700">
+                                {{ $subject->credits ?? 3 }} TC
                             </td>
                             <td class="py-3.5 px-5 text-slate-500 text-xs max-w-xs truncate">
                                 {{ $subject->description ?? '—' }}
                             </td>
                             <td class="py-3.5 px-5 text-center">
                                 @if($subject->status)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        Hoạt động
-                                    </span>
+                                    <span class="text-xs font-medium text-emerald-600">Hoạt động</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                        Tạm khóa
-                                    </span>
+                                    <span class="text-xs font-medium text-slate-500">Tạm khóa</span>
                                 @endif
                             </td>
                             <td class="py-3.5 px-5 text-right">

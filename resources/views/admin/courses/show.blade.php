@@ -38,9 +38,7 @@
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Học Kỳ</span>
-                <span class="inline-flex items-center px-2 py-0.5 bg-slate-100 text-slate-800 font-medium text-xs rounded border border-slate-200">
-                    {{ $course->semester }}
-                </span>
+                <span class="text-slate-900 font-medium text-sm block">{{ $course->semester }}</span>
             </div>
             <div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Năm Học</span>
@@ -57,13 +55,9 @@
             <div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Trạng Thái</span>
                 @if($course->status === 'active')
-                    <span class="inline-flex items-center px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-xs font-medium">
-                        Hoạt động
-                    </span>
+                    <span class="text-sm font-medium text-emerald-600">Hoạt động</span>
                 @else
-                    <span class="inline-flex items-center px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-medium">
-                        Tạm dừng
-                    </span>
+                    <span class="text-sm font-medium text-slate-500">Tạm dừng</span>
                 @endif
             </div>
         </div>
@@ -106,10 +100,8 @@
                                 <td class="py-3.5 px-5 font-semibold text-slate-900">
                                     {{ $subject->name }}
                                 </td>
-                                <td class="py-3.5 px-5 text-center">
-                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-mono font-semibold">
-                                        {{ $subject->credits ?? 3 }} TC
-                                    </span>
+                                <td class="py-3.5 px-5 text-center font-mono text-xs font-semibold text-slate-700">
+                                    {{ $subject->credits ?? 3 }} TC
                                 </td>
                                 <td class="py-3.5 px-5 text-slate-600">
                                     @if($subject->teachers && $subject->teachers->count() > 0)
@@ -124,9 +116,7 @@
                                     @endif
                                 </td>
                                 <td class="py-3.5 px-5 text-center">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        Đang giảng dạy
-                                    </span>
+                                    <span class="text-xs font-medium text-emerald-600">Đang giảng dạy</span>
                                 </td>
                             </tr>
                         @endforeach

@@ -128,7 +128,7 @@
                     <span class="px-2.5 py-1 bg-slate-100 text-slate-700 font-medium text-xs rounded border border-slate-200">
                         Đã chọn: <span x-text="selectedCount" class="font-bold text-slate-900"></span> môn
                     </span>
-                    <span class="px-2.5 py-1 bg-blue-50 text-blue-700 font-mono font-semibold text-xs rounded border border-blue-200">
+                    <span class="font-mono font-semibold text-xs text-slate-700">
                         Tổng: <span x-text="selectedCredits" class="font-bold"></span> TC
                     </span>
                 </div>
@@ -164,7 +164,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            <span class="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 font-mono font-semibold text-xs rounded">
+                            <span class="font-mono font-semibold text-xs text-slate-700">
                                 {{ $subject->credits ?? 3 }} TC
                             </span>
                         </div>
