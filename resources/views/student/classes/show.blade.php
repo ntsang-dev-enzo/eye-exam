@@ -40,61 +40,35 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Subject Teachers List -->
-        <div class="lg:col-span-1 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
-            <h3 class="font-black text-lg text-gray-900 border-b border-gray-100 pb-3">Môn học & Giảng viên Bộ môn</h3>
-            
-            @forelse($subjectTeachers as $st)
-                <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
-                    <span class="text-xs font-mono text-indigo-600 font-bold block">{{ $st->subject_code }}</span>
-                    <h4 class="font-bold text-gray-900 text-sm">{{ $st->subject_name }}</h4>
-                    <p class="text-xs text-gray-600 font-medium">Giảng viên: <span class="font-bold text-gray-800">{{ $st->teacher_name }}</span></p>
+    <!-- Subject Teachers & Documents List -->
+    <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
+        <h3 class="font-black text-lg text-gray-900 border-b border-gray-100 pb-3">Môn học & Tài liệu học tập</h3>
+
+        @if($subjectTeachers->isEmpty())
+            <div class="py-10 text-center">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
-            @empty
-                <p class="text-sm text-gray-500 py-4 text-center">Chưa có môn học nào được phân công.</p>
-            @endforelse
-        </div>
-
-        <!-- Classmates List -->
-        <div class="lg:col-span-2 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 class="font-black text-lg text-gray-900">Danh sách Bạn cùng lớp</h3>
-                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-100">
-                    Sĩ số: {{ $class->students->count() }} sinh viên
-                </span>
+                <p class="text-sm text-gray-500">Chưa có môn học nào được phân công cho lớp này.</p>
             </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-gray-600">
-                    <thead class="bg-gray-50 text-xs uppercase text-gray-400 font-bold">
-                        <tr>
-                            <th class="px-4 py-3 w-12 text-center">STT</th>
-                            <th class="px-4 py-3">Mã SV</th>
-                            <th class="px-4 py-3">Họ và tên</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($class->students as $index => $student)
-                            <tr class="hover:bg-gray-50/50 transition-colors {{ $student->id === auth()->id() ? 'bg-indigo-50/40 font-bold' : '' }}">
-                                <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $index + 1 }}</td>
-                                <td class="px-4 py-3 font-mono text-xs font-bold text-gray-800">{{ $student->code ?? 'N/A' }}</td>
-                                <td class="px-4 py-3 text-gray-900 font-medium flex items-center gap-2">
-                                    {{ $student->name }}
-                                    @if($student->id === auth()->id())
-                                        <span class="px-2 py-0.5 bg-indigo-600 text-white font-bold text-[10px] rounded-full">Bạn</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="px-4 py-8 text-center text-gray-400">Không có danh sách bạn cùng lớp.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        @else
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach($subjectTeachers as $st)
+                    <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-mono text-indigo-600 font-bold block mb-0.5">{{ $st->subject_code }}</span>
+                            <h4 class="font-bold text-gray-900 text-sm leading-snug">{{ $st->subject_name }}</h4>
+                            <p class="text-xs text-gray-500 font-medium mt-1">Giảng viên: <span class="font-bold text-gray-700">{{ $st->teacher_name }}</span></p>
+                        </div>
+                        <a href="{{ route('student.classes.subjects.documents.index', ['class' => $class->id, 'subject' => $st->subject_id]) }}"
+                           class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors w-full justify-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Xem tài liệu học tập
+                        </a>
+                    </div>
+                @endforeach
             </div>
-        </div>
+        @endif
     </div>
 </div>
 @endsection

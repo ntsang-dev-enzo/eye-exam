@@ -23,15 +23,6 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl px-4 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <span class="text-[10px] text-slate-400 font-semibold uppercase block">Điểm danh TB</span>
-                    <span class="text-sm font-extrabold text-emerald-600">100%</span>
-                </div>
-            </div>
         </div>
     </div>
 

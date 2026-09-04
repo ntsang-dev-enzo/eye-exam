@@ -41,4 +41,14 @@ class Subject extends Model
     {
         return $this->belongsToMany(Course::class, 'course_subject')->withTimestamps();
     }
+
+    public function documentCategories()
+    {
+        return $this->hasMany(DocumentCategory::class, 'subject_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'subject_id');
+    }
 }
