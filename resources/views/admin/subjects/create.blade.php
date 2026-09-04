@@ -17,7 +17,7 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Code -->
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Mã môn học <span class="text-rose-500">*</span></label>
@@ -28,6 +28,12 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Tên môn học <span class="text-rose-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" required class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-4 py-2.5 bg-slate-50 text-sm" placeholder="VD: Lập trình C++">
+                </div>
+
+                <!-- Credits -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Số tín chỉ (TC) <span class="text-rose-500">*</span></label>
+                    <input type="number" name="credits" min="1" max="15" value="{{ old('credits', 3) }}" required class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 px-4 py-2.5 bg-slate-50 text-sm" placeholder="3">
                 </div>
             </div>
 

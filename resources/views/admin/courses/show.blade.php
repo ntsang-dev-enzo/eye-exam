@@ -29,7 +29,7 @@
 
     <!-- Course Info Card -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Học Kỳ</span>
                 <span class="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-lg border border-indigo-100">
@@ -43,6 +43,10 @@
             <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Tổng Số Môn Học</span>
                 <span class="text-slate-900 font-bold text-base block">{{ $course->subjects->count() }} môn</span>
+            </div>
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Tổng Số Tín Chỉ</span>
+                <span class="text-indigo-600 font-black text-base font-mono block">{{ $course->total_credits }} TC</span>
             </div>
             <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Trạng Thái</span>
@@ -72,7 +76,7 @@
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden space-y-4 p-6">
         <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                 Danh sách Môn học thuộc Khóa học
             </h2>
             <span class="text-xs text-slate-400 font-semibold">Cập nhật: {{ $course->updated_at->format('d/m/Y H:i') }}</span>
@@ -85,6 +89,7 @@
                         <tr class="bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-black tracking-wider text-slate-500 uppercase">
                             <th class="py-3.5 px-4">Mã Môn</th>
                             <th class="py-3.5 px-4">Tên Môn Học</th>
+                            <th class="py-3.5 px-4 text-center">Tín Chỉ</th>
                             <th class="py-3.5 px-4">Giảng Viên Phụ Trách</th>
                             <th class="py-3.5 px-4">Trạng Thái</th>
                         </tr>
@@ -97,6 +102,11 @@
                                 </td>
                                 <td class="py-4 px-4 font-bold text-slate-900">
                                     {{ $subject->name }}
+                                </td>
+                                <td class="py-4 px-4 text-center">
+                                    <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100/80 rounded-lg text-xs font-mono font-bold">
+                                        {{ $subject->credits ?? 3 }} TC
+                                    </span>
                                 </td>
                                 <td class="py-4 px-4 text-slate-600">
                                     @if($subject->teachers && $subject->teachers->count() > 0)

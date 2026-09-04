@@ -20,14 +20,14 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $subjects = [
-            ['code' => 'CS101', 'name' => 'Lập trình C++', 'description' => 'Cơ bản C++', 'status' => true],
-            ['code' => 'CS102', 'name' => 'Toán Rời Rạc', 'description' => 'Toán học máy tính', 'status' => true],
-            ['code' => 'CS103', 'name' => 'Cơ sở Dữ liệu', 'description' => 'SQL & NoSQL', 'status' => true],
-            ['code' => 'CS104', 'name' => 'Phát triển Web', 'description' => 'HTML, CSS, JS, PHP', 'status' => true],
+            ['code' => 'CS101', 'name' => 'Lập trình C++', 'credits' => 4, 'description' => 'Cơ bản C++', 'status' => true],
+            ['code' => 'CS102', 'name' => 'Toán Rời Rạc', 'credits' => 3, 'description' => 'Toán học máy tính', 'status' => true],
+            ['code' => 'CS103', 'name' => 'Cơ sở Dữ liệu', 'credits' => 3, 'description' => 'SQL & NoSQL', 'status' => true],
+            ['code' => 'CS104', 'name' => 'Phát triển Web', 'credits' => 3, 'description' => 'HTML, CSS, JS, PHP', 'status' => true],
         ];
 
         foreach ($subjects as $subject) {
-            \App\Models\Subject::firstOrCreate(['code' => $subject['code']], $subject);
+            \App\Models\Subject::updateOrCreate(['code' => $subject['code']], $subject);
         }
 
         $this->call([

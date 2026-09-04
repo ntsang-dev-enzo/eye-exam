@@ -12,8 +12,14 @@ class Subject extends Model
     protected $fillable = [
         'code',
         'name',
+        'credits',
         'description',
         'status',
+    ];
+
+    protected $casts = [
+        'credits' => 'integer',
+        'status' => 'boolean',
     ];
 
     public function questions()

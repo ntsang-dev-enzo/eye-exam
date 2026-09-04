@@ -15,7 +15,7 @@ class CourseController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Course::withCount('subjects');
+        $query = Course::with('subjects')->withCount('subjects');
 
         // Search by name
         if ($request->filled('search')) {

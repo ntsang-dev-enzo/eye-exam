@@ -12,24 +12,46 @@
         </div>
 
         <!-- Right Top Banner Metrics -->
-        <div class="flex items-center gap-3 shrink-0">
-            <div class="bg-white rounded-xl px-4 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        <div class="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+            <!-- Metric 1: Completed Credits vs Required Credits (150 TC) -->
+            <div class="bg-white rounded-xl px-4 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-3 min-w-[200px]">
+                <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
-                <div>
-                    <span class="text-[10px] text-slate-400 font-semibold uppercase block">Tổng tín chỉ</span>
-                    <span class="text-sm font-extrabold text-slate-900">120/140 TC</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Đã tích lũy</span>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100">{{ $progressPercent }}%</span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-sm font-black text-slate-900 font-mono">{{ $completedCredits }}</span>
+                        <span class="text-xs font-semibold text-slate-400 font-mono">/ {{ $requiredCredits }} TC</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                        <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: {{ $progressPercent }}%"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl px-4 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path></svg>
+            <!-- Metric 2: Current Semester Credits -->
+            <div class="bg-white rounded-xl px-4 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0 border border-blue-100">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                 </div>
                 <div>
-                    <span class="text-[10px] text-slate-400 font-semibold uppercase block">GPA tích lũy</span>
-                    <span class="text-sm font-extrabold text-emerald-600">3.65 / 4.0</span>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Kỳ này học</span>
+                    <span class="text-sm font-black text-blue-600 font-mono">{{ $totalCredits ?? 0 }} TC</span>
+                </div>
+            </div>
+
+            <!-- Metric 3: GPA -->
+            <div class="bg-white rounded-xl px-4 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0 border border-indigo-100">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path></svg>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">GPA tích lũy</span>
+                    <span class="text-sm font-black text-slate-800">3.65 / 4.0</span>
                 </div>
             </div>
         </div>
@@ -98,8 +120,11 @@
                         @endif
 
                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-500">Số môn học đăng ký</span>
-                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{{ $course->subjects->count() }} môn</span>
+                            <span class="text-xs font-semibold text-slate-500">Khối lượng học phần</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">{{ $course->subjects->count() }} môn</span>
+                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 font-mono">{{ $course->total_credits }} TC</span>
+                            </div>
                         </div>
                     </div>
 
@@ -143,7 +168,10 @@
                         <template x-for="subject in selectedCourse?.subjects" :key="subject.id">
                             <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50/80 flex items-center justify-between">
                                 <div>
-                                    <h4 class="font-bold text-slate-900 text-xs" x-text="subject.name"></h4>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-bold text-slate-900 text-xs" x-text="subject.name"></h4>
+                                        <span class="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200/60 rounded-md font-mono font-bold text-[10px]" x-text="(subject.credits || 3) + ' TC'"></span>
+                                    </div>
                                     <span class="text-[11px] font-mono text-slate-400" x-text="'Mã môn: ' + subject.code"></span>
                                 </div>
                                 <span class="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-full font-bold text-[11px]">

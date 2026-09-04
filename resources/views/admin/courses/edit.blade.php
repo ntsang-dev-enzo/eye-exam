@@ -101,20 +101,36 @@
         <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-4"
              x-data="{ 
                 searchQuery: '', 
-                selectedCount: {{ count(old('subjects', $selectedSubjectIds)) }}
-             }">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                selectedCount: {{ count(old('subjects', $selectedSubjectIds)) }},
+                selectedCredits: {{ $subjects->whereIn('id', old('subjects', $selectedSubjectIds))->sum('credits') }},
+                updateStats() {
+                    const checked = document.querySelectorAll('input[name=\'subjects[]\']:checked');
+                    this.selectedCount = checked.length;
+                    let total = 0;
+                    checked.forEach(el => {
+                        total += parseInt(el.getAttribute('data-credits') || 3);
+                    });
+                    this.selectedCredits = total;
+                }
+             }"
+             x-init="updateStats()">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         Môn học trong khóa học <span class="text-rose-500">*</span>
                     </h2>
                     <p class="text-xs text-slate-500 font-medium">Chỉnh sửa danh sách các môn học thuộc khóa học này</p>
                 </div>
-                <!-- Real-time counter badge -->
-                <span class="px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 font-black text-xs rounded-full">
-                    Đã chọn: <span x-text="selectedCount" class="text-indigo-600"></span> môn học
-                </span>
+                <!-- Real-time counter & credits badges -->
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold text-xs rounded-full">
+                        Đã chọn: <span x-text="selectedCount" class="font-black text-indigo-600"></span> môn học
+                    </span>
+                    <span class="px-3 py-1 bg-blue-50 border border-blue-100 text-blue-700 font-bold text-xs rounded-full font-mono">
+                        Tổng: <span x-text="selectedCredits" class="font-black text-blue-600"></span> TC
+                    </span>
+                </div>
             </div>
 
             @error('subjects')
@@ -135,13 +151,19 @@
                         class="flex items-center justify-between p-3 bg-white hover:bg-indigo-50/50 rounded-xl border border-transparent hover:border-indigo-200 cursor-pointer transition-all">
                         <div class="flex items-center gap-3">
                             <input type="checkbox" name="subjects[]" value="{{ $subject->id }}" 
+                                data-credits="{{ $subject->credits ?? 3 }}"
                                 {{ in_array($subject->id, old('subjects', $selectedSubjectIds)) ? 'checked' : '' }}
-                                @change="selectedCount = document.querySelectorAll('input[name=\'subjects[]\']:checked').length"
+                                @change="updateStats()"
                                 class="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
                             <div>
                                 <span class="font-bold text-slate-800 text-sm block">{{ $subject->name }}</span>
                                 <span class="text-xs text-slate-400 font-mono">Mã môn: {{ $subject->code }}</span>
                             </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 font-mono font-bold text-xs rounded-lg shadow-2xs">
+                                {{ $subject->credits ?? 3 }} TC
+                            </span>
                         </div>
                     </label>
                 @endforeach

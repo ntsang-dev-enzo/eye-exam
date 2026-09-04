@@ -32,4 +32,12 @@ class Course extends Model
     {
         return $this->hasMany(SchoolClass::class, 'course_id');
     }
+
+    /**
+     * Get total credits of all subjects in this course.
+     */
+    public function getTotalCreditsAttribute(): int
+    {
+        return (int) $this->subjects->sum('credits');
+    }
 }

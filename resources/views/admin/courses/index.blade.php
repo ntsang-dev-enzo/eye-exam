@@ -89,6 +89,7 @@
                             <th class="py-4 px-6">Học Kỳ</th>
                             <th class="py-4 px-6">Năm Học</th>
                             <th class="py-4 px-6 text-center">Số Môn Học</th>
+                            <th class="py-4 px-6 text-center">Tổng Tín Chỉ</th>
                             <th class="py-4 px-6">Trạng Thái</th>
                             <th class="py-4 px-6 text-right">Thao Tác</th>
                         </tr>
@@ -114,8 +115,14 @@
                                 </td>
                                 <td class="py-4 px-6 text-center">
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-bold text-xs">
-                                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                         {{ $course->subjects_count }} môn
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 text-center">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100/80 rounded-full font-bold font-mono text-xs shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        {{ $course->total_credits }} TC
                                     </span>
                                 </td>
                                 <td class="py-4 px-6">

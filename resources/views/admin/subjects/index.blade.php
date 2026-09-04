@@ -36,6 +36,7 @@
                     <tr class="bg-slate-50/50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-gray-100">
                         <th class="px-6 py-4">Mã Môn</th>
                         <th class="px-6 py-4">Tên Môn Học</th>
+                        <th class="px-6 py-4 text-center">Tín chỉ</th>
                         <th class="px-6 py-4">Mô tả</th>
                         <th class="px-6 py-4">Trạng thái</th>
                         <th class="px-6 py-4 text-right">Thao tác</th>
@@ -46,6 +47,11 @@
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ $subject->code }}</td>
                             <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ $subject->name }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-lg border border-indigo-100 font-mono">
+                                    {{ $subject->credits ?? 3 }} TC
+                                </span>
+                            </td>
                             <td class="px-6 py-4 text-sm text-slate-500 line-clamp-1">{{ $subject->description ?? '-' }}</td>
                             <td class="px-6 py-4">
                                 @if($subject->status)

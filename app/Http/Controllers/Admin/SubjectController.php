@@ -39,6 +39,7 @@ class SubjectController extends Controller
         $request->validate([
             'code' => 'required|string|unique:subjects,code|max:50',
             'name' => 'required|string|max:255',
+            'credits' => 'required|integer|min:1|max:15',
             'description' => 'nullable|string',
             'status' => 'boolean',
             'teachers' => 'nullable|array',
@@ -48,6 +49,7 @@ class SubjectController extends Controller
         $subject = Subject::create([
             'code' => strtoupper($request->code),
             'name' => $request->name,
+            'credits' => $request->credits,
             'description' => $request->description,
             'status' => $request->has('status'),
         ]);
@@ -74,6 +76,7 @@ class SubjectController extends Controller
         $request->validate([
             'code' => 'required|string|max:50|unique:subjects,code,' . $subject->id,
             'name' => 'required|string|max:255',
+            'credits' => 'required|integer|min:1|max:15',
             'description' => 'nullable|string',
             'status' => 'boolean',
             'teachers' => 'nullable|array',
@@ -83,6 +86,7 @@ class SubjectController extends Controller
         $subject->update([
             'code' => strtoupper($request->code),
             'name' => $request->name,
+            'credits' => $request->credits,
             'description' => $request->description,
             'status' => $request->has('status'),
         ]);
