@@ -14,9 +14,11 @@ use App\Http\Controllers\Teacher\ClassController as TeacherClassController;
 use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use App\Http\Controllers\Teacher\CategoryController as TeacherCategoryController;
+use App\Http\Controllers\Teacher\DocumentController as TeacherDocumentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
+use App\Http\Controllers\Student\DocumentController as StudentDocumentController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -107,12 +109,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
         Route::get('/de-thi/{exam}/sinh-vien/{attempt}/hanh-vi', [\App\Http\Controllers\Teacher\ExamController::class, 'studentBehavior'])->name('exams.student-behavior');
 
-        // Classes & Attendance
+        // Classes
         Route::get('/lop-hoc', [TeacherClassController::class, 'index'])->name('classes.index');
         Route::get('/lop-hoc/{class}', [TeacherClassController::class, 'show'])->name('classes.show');
-        Route::get('/lop-hoc/{class}/diem-danh', [TeacherClassController::class, 'attendance'])->name('classes.attendance');
-        Route::post('/lop-hoc/{class}/diem-danh', [TeacherClassController::class, 'storeAttendance'])->name('classes.store-attendance');
-        Route::get('/lop-hoc/{class}/lich-su-diem-danh', [TeacherClassController::class, 'attendanceHistory'])->name('classes.attendance-history');
 
         // Assignments
         Route::get('/giao-de-thi', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
@@ -120,6 +119,18 @@ Route::middleware('auth')->group(function () {
 
         // Teacher Course View (Khóa học của tôi)
         Route::get('/khoa-hoc-cua-toi', [TeacherCourseController::class, 'index'])->name('khoa-hoc.index');
+
+        // Study Materials (Tài liệu học tập)
+        Route::get('/lop-hoc/{class}/mon-hoc/{subject}/tai-lieu', [TeacherDocumentController::class, 'index'])->name('classes.subjects.documents.index');
+        Route::post('/lop-hoc/{class}/mon-hoc/{subject}/danh-muc', [TeacherDocumentController::class, 'storeCategory'])->name('classes.subjects.categories.store');
+        Route::put('/danh-muc-tai-lieu/{category}', [TeacherDocumentController::class, 'updateCategory'])->name('document-categories.update');
+        Route::delete('/danh-muc-tai-lieu/{category}', [TeacherDocumentController::class, 'destroyCategory'])->name('document-categories.destroy');
+
+        Route::post('/lop-hoc/{class}/mon-hoc/{subject}/tai-lieu', [TeacherDocumentController::class, 'store'])->name('classes.subjects.documents.store');
+        Route::put('/tai-lieu/{document}', [TeacherDocumentController::class, 'update'])->name('documents.update');
+        Route::delete('/tai-lieu/{document}', [TeacherDocumentController::class, 'destroy'])->name('documents.destroy');
+        Route::get('/tai-lieu/{document}/xem', [TeacherDocumentController::class, 'view'])->name('documents.view');
+        Route::get('/tai-lieu/{document}/tai-ve', [TeacherDocumentController::class, 'download'])->name('documents.download');
     });
 
     // Student routes (Protected by role:student)
@@ -145,6 +156,11 @@ Route::middleware('auth')->group(function () {
         // Student Classes View
         Route::get('/lop-hoc-cua-toi', [\App\Http\Controllers\Student\ClassController::class, 'index'])->name('classes.index');
         Route::get('/lop-hoc-cua-toi/{class}', [\App\Http\Controllers\Student\ClassController::class, 'show'])->name('classes.show');
+
+        // Study Materials (Tài liệu học tập)
+        Route::get('/lop-hoc-cua-toi/{class}/mon-hoc/{subject}/tai-lieu', [StudentDocumentController::class, 'index'])->name('classes.subjects.documents.index');
+        Route::get('/tai-lieu/{document}/xem', [StudentDocumentController::class, 'view'])->name('documents.view');
+        Route::get('/tai-lieu/{document}/tai-ve', [StudentDocumentController::class, 'download'])->name('documents.download');
 
         // Student Course View (Khóa học của tôi)
         Route::get('/khoa-hoc-cua-toi', [StudentCourseController::class, 'index'])->name('khoa-hoc.index');

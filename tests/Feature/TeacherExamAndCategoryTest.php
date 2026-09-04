@@ -495,6 +495,7 @@ class TeacherExamAndCategoryTest extends TestCase
             'max_attempts' => 1,
             'status' => 'published',
             'allow_review' => true,
+            'require_face_verification' => false,
         ]);
         $exam->questions()->attach($q1->id, ['question_order' => 1, 'points' => 10]);
 

@@ -34,14 +34,14 @@ class ClassController extends Controller
             abort(403, 'Bạn không thuộc lớp học này.');
         }
 
-        $class->load(['teacher', 'course', 'students']);
+        $class->load(['teacher', 'course']);
 
         // Get subjects & teachers assigned to this class
         $subjectTeachers = DB::table('class_subject_teacher')
             ->join('subjects', 'class_subject_teacher.subject_id', '=', 'subjects.id')
             ->join('users', 'class_subject_teacher.teacher_id', '=', 'users.id')
             ->where('class_subject_teacher.class_id', $class->id)
-            ->select('subjects.code as subject_code', 'subjects.name as subject_name', 'users.name as teacher_name', 'users.email as teacher_email')
+            ->select('subjects.id as subject_id', 'subjects.code as subject_code', 'subjects.name as subject_name', 'users.name as teacher_name', 'users.email as teacher_email')
             ->get();
 
         return view('student.classes.show', compact('class', 'subjectTeachers'));

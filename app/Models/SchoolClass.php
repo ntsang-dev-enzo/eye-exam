@@ -43,8 +43,13 @@ class SchoolClass extends Model
             ->withTimestamps();
     }
 
-    public function attendances()
+    public function documentCategories()
     {
-        return $this->hasMany(Attendance::class, 'class_id');
+        return $this->hasMany(DocumentCategory::class, 'class_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'class_id');
     }
 }
