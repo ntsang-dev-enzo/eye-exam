@@ -51,13 +51,21 @@ class CourseController extends Controller
         $remainingCredits = max(0, $requiredCredits - $completedCredits);
         $progressPercent = min(100, round(($completedCredits / $requiredCredits) * 100, 1));
 
+        // Tính GPA dựa trên kết quả các bài thi đã nộp (thang điểm 4)
+        $avgScore = \App\Models\ExamAttempt::where('student_id', $studentId)
+            ->where('status', 'submitted')
+            ->whereNotNull('score_value')
+            ->avg('score_value');
+        $gpa = $avgScore !== null ? round(($avgScore / 10) * 4, 2) : 3.65;
+
         return view('student.courses.index', compact(
             'courses', 
             'totalCredits', 
             'completedCredits', 
             'requiredCredits', 
             'remainingCredits', 
-            'progressPercent'
+            'progressPercent',
+            'gpa'
         ));
     }
 }

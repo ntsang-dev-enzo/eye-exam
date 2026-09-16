@@ -66,12 +66,32 @@
             </a>
 
             <!-- BUTTON -->
-            <div class="flex items-center gap-4">
-                <a href="/dang-nhap" class="px-7 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-600/25 transition-all duration-300 active:scale-95 flex items-center gap-2">
-                    <span>Đăng nhập</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </a>
-            </div>
+            @auth
+                <div class="flex items-center gap-3">
+                    <a href="{{ auth()->user()->dashboard_url }}" class="px-6 py-2.5 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/25 transition-all duration-300 active:scale-95 flex items-center gap-2 text-sm shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                        </svg>
+                        <span>Tổng quan</span>
+                        <svg class="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline m-0 p-0">
+                        @csrf
+                        <button type="submit" title="Đăng xuất" class="w-10 h-10 rounded-full border border-slate-200/80 bg-white text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center cursor-pointer shadow-xs" aria-label="Đăng xuất">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="flex items-center gap-4">
+                    <a href="{{ route('login') }}" class="px-7 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-600/25 transition-all duration-300 active:scale-95 flex items-center gap-2 text-sm shadow-sm">
+                        <span>Đăng nhập</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                </div>
+            @endauth
         </div>
     </nav>
 
@@ -107,10 +127,20 @@
             </p>
 
             <div class="mt-12 flex flex-col sm:flex-row gap-5 animate-fade-in-up" style="animation-delay: 300ms;">
-                <a href="/dang-nhap" class="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-3">
-                    Tham gia kỳ thi ngay
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
+                @auth
+                    <a href="{{ auth()->user()->dashboard_url }}" class="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                        </svg>
+                        <span>Tổng quan</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                @else
+                    <a href="{{ route('login') }}" class="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-3">
+                        <span>Tham gia kỳ thi ngay</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                @endauth
             </div>
             
             <!-- CTUT Highlight Card -->

@@ -17,26 +17,57 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <form action="{{ route('teacher.categories.index') }}" method="GET" class="flex flex-wrap items-center gap-2">
-                    <div class="relative">
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm tên danh mục..." class="pl-8 pr-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-blue-500 focus:border-blue-500 w-48 shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <form action="{{ route('teacher.categories.index') }}" method="GET" class="flex flex-wrap items-center gap-2.5">
+                    <!-- Search Input -->
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-600 transition-colors">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm tên danh mục..." 
+                            class="pl-10 pr-4 py-2.5 bg-gray-50/80 hover:bg-blue-50/20 focus:bg-white border border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-2xl text-sm font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 w-48 sm:w-56 transition-all shadow-2xs">
+                    </div>
+
+                    <!-- Select Tất cả môn học with rounded-2xl & custom styling -->
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-600 transition-colors z-10">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                        <select name="subject_id" onchange="this.form.submit()" 
+                            class="w-full sm:w-auto min-w-[200px] pl-10 pr-10 py-2.5 bg-gray-50/80 hover:bg-blue-50/20 focus:bg-white border border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-2xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all appearance-none cursor-pointer shadow-2xs">
+                            <option value="">-- Tất cả môn học --</option>
+                            @foreach($subjects as $subject)
+                                <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
+                                    {{ $subject->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-600 transition-colors z-10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
                     </div>
 
-                    <select name="subject_id" class="text-sm rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
-                        <option value="">-- Tất cả môn học --</option>
-                        @foreach($subjects as $subject)
-                            <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
-                                {{ $subject->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <!-- Reset Filter Button if applied -->
+                    @if(request('search') || request('subject_id'))
+                        <a href="{{ route('teacher.categories.index') }}" 
+                            class="p-2.5 bg-gray-100 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-2xl border border-gray-200 hover:border-rose-200 transition-all duration-200 flex items-center justify-center" 
+                            title="Xóa bộ lọc">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </a>
+                    @endif
                 </form>
 
-                <button type="button" onclick="openCreateCategoryModal()" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm shadow-blue-200 transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <button type="button" onclick="openCreateCategoryModal()" class="inline-flex items-center justify-center px-4.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-2xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                    </svg>
                     Tạo danh mục mới
                 </button>
             </div>
@@ -153,30 +184,37 @@
                     <div id="methodContainer"></div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Môn học <span class="text-red-500">*</span></label>
-                        <select name="subject_id" id="modal_subject_id" required class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-sm bg-gray-50">
-                            <option value="">-- Chọn môn học --</option>
-                            @foreach($subjects as $subject)
-                                <option value="{{ $subject->id }}">{{ $subject->name }}</option>
-                            @endforeach
-                        </select>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Môn học <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select name="subject_id" id="modal_subject_id" required class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 px-4 py-2.5 text-sm bg-gray-50/80 font-medium appearance-none cursor-pointer transition-all">
+                                <option value="">-- Chọn môn học --</option>
+                                @foreach($subjects as $subject)
+                                    <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tên danh mục / Chuyên đề <span class="text-red-500">*</span></label>
-                        <input type="text" name="name" id="modal_category_name" required placeholder="VD: Chương 1: Giới thiệu căn bản" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-sm">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tên danh mục / Chuyên đề <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" id="modal_category_name" required placeholder="VD: Chương 1: Giới thiệu căn bản" class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 px-4 py-2.5 text-sm bg-gray-50/80 focus:bg-white transition-all">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
-                        <textarea name="description" id="modal_category_description" rows="3" placeholder="Mô tả nội dung chương hoặc chuyên đề..." class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-sm"></textarea>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mô tả (Tùy chọn)</label>
+                        <textarea name="description" id="modal_category_description" rows="3" placeholder="Mô tả nội dung chương hoặc chuyên đề..." class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 px-4 py-2.5 text-sm bg-gray-50/80 focus:bg-white transition-all"></textarea>
                     </div>
 
                     <div class="pt-3 flex gap-3 border-t border-gray-100">
-                        <button type="button" onclick="closeCategoryModal()" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium text-sm rounded-xl hover:bg-gray-200 transition-colors">
+                        <button type="button" onclick="closeCategoryModal()" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold text-sm rounded-2xl hover:bg-gray-200 transition-colors">
                             Hủy bỏ
                         </button>
-                        <button type="submit" id="btnSubmitCategory" class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+                        <button type="submit" id="btnSubmitCategory" class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-2xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20">
                             Lưu danh mục
                         </button>
                     </div>

@@ -12,6 +12,10 @@ class AuthController extends Controller
      */
     public function showLoginForm()
     {
+        if (Auth::check()) {
+            return redirect(Auth::user()->dashboard_url);
+        }
+
         return view('auth.login');
     }
 
@@ -26,8 +30,10 @@ class AuthController extends Controller
             'role' => ['required', 'in:admin,teacher,student'],
         ]);
 
-        // We attempt to log in using only email and password
-        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']])) {
+        $remember = $request->boolean('remember');
+
+        // We attempt to log in using credentials and remember option
+        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $remember)) {
             
             $user = Auth::user();
             

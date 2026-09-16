@@ -112,4 +112,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(AntiCheatLog::class, 'student_id')->orderBy('occurred_at', 'desc');
     }
+
+    /**
+     * Get dashboard URL based on user role.
+     */
+    public function getDashboardUrlAttribute(): string
+    {
+        return match ($this->role) {
+            'admin' => route('admin.dashboard'),
+            'teacher' => route('teacher.dashboard'),
+            'student' => route('student.dashboard'),
+            default => url('/'),
+        };
+    }
 }
