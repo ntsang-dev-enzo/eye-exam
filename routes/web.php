@@ -15,6 +15,7 @@ use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentContro
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use App\Http\Controllers\Teacher\CategoryController as TeacherCategoryController;
 use App\Http\Controllers\Teacher\DocumentController as TeacherDocumentController;
+use App\Http\Controllers\Teacher\ReportController as TeacherReportController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
@@ -132,6 +133,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/tai-lieu/{document}', [TeacherDocumentController::class, 'destroy'])->name('documents.destroy');
         Route::get('/tai-lieu/{document}/xem', [TeacherDocumentController::class, 'view'])->name('documents.view');
         Route::get('/tai-lieu/{document}/tai-ve', [TeacherDocumentController::class, 'download'])->name('documents.download');
+
+        // Reports and Statistics (Báo cáo Thống kê)
+        Route::get('/bao-cao-thong-ke', [TeacherReportController::class, 'index'])->name('reports.index');
+        Route::get('/bao-cao-thong-ke/xuat-csv', [TeacherReportController::class, 'exportCsv'])->name('reports.export');
     });
 
     // Student routes (Protected by role:student)
