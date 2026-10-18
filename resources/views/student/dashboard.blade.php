@@ -14,11 +14,22 @@
                     Cổng thi trực tuyến EyeExam
                 </div>
                 <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">Xin chào, {{ auth()->user()->name }}!</h1>
-                <p class="text-xs sm:text-sm text-blue-100/90 flex items-center gap-3 flex-wrap">
-                    <span>Mã sinh viên: <strong class="text-white font-mono bg-white/15 px-2 py-0.5 rounded">{{ auth()->user()->code }}</strong></span>
-                    <span>•</span>
-                    <span>Lớp / Chuyên ngành: <strong class="text-white">{{ auth()->user()->class_name ?? 'Sinh viên' }}</strong></span>
-                </p>
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap text-xs sm:text-sm text-blue-100/90 mt-2">
+                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-lg border border-white/15">
+                        <span class="text-blue-200">Mã SV:</span>
+                        <strong class="text-white font-mono font-bold">{{ auth()->user()->code }}</strong>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-lg border border-white/15">
+                        <svg class="w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        <span class="text-blue-200">Lớp:</span>
+                        <strong class="text-white font-bold">{{ auth()->user()->class_name ?? 'Chưa phân lớp' }}</strong>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-lg border border-white/15">
+                        <svg class="w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <span class="text-blue-200">Chuyên ngành:</span>
+                        <strong class="text-white font-bold">{{ auth()->user()->department_name }}</strong>
+                    </span>
+                </div>
             </div>
 
             <div class="shrink-0 flex items-center gap-3">
@@ -48,9 +59,9 @@
     </div>
     @endif
 
-    <!-- 2. Summary Statistics Grid (4 columns) -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <!-- Card 1 -->
+    <!-- 2. Summary Statistics Grid (3 columns - đã bỏ mục điểm trung bình) -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Card 1: Bài thi được giao -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div class="space-y-1">
                 <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Bài thi được giao</p>
@@ -61,7 +72,7 @@
             </div>
         </div>
 
-        <!-- Card 2 -->
+        <!-- Card 2: Lượt hoàn thành -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div class="space-y-1">
                 <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Lượt hoàn thành</p>
@@ -72,20 +83,7 @@
             </div>
         </div>
 
-        <!-- Card 3 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
-            <div class="space-y-1">
-                <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Điểm trung bình</p>
-                <p class="text-2xl font-extrabold text-blue-600">
-                    {{ $stats['avg_score'] !== null ? $stats['avg_score'] . ' đ' : '--' }}
-                </p>
-            </div>
-            <div class="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-            </div>
-        </div>
-
-        <!-- Card 4 -->
+        <!-- Card 3: Đang làm dở -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div class="space-y-1">
                 <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Đang làm dở</p>
@@ -97,35 +95,84 @@
         </div>
     </div>
 
-    <!-- 3. Section: Danh Sách Kỳ Thi Theo Danh Mục -->
+    <!-- 3. Section: Danh Sách Kỳ Thi & Bộ Lọc Theo Kỳ / Môn Học -->
     <div class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
             <div>
                 <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    Kỳ thi được phân công theo danh mục
+                    Kỳ thi & Bài thi được giao
                 </h2>
-                <p class="text-xs text-slate-500 mt-0.5">Chọn danh mục môn học để lọc nhanh các đề thi cần làm</p>
+                <p class="text-xs text-slate-500 mt-0.5">Lọc nhanh theo học kỳ và môn học trong kỳ để tìm kiếm bài thi chính xác</p>
+            </div>
+        </div>
+
+        <!-- Filter Card: Kỳ & Môn học trong kỳ & Tìm kiếm -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+                <!-- Dropdown Học kỳ -->
+                <div class="lg:col-span-4">
+                    <label for="filterSemester" class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Học kỳ
+                    </label>
+                    <div class="relative">
+                        <select id="filterSemester" onchange="onSemesterFilterChange()" class="w-full text-xs font-semibold rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-3 pr-8 text-slate-800 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all appearance-none cursor-pointer">
+                            <option value="">-- Tất cả học kỳ --</option>
+                            @foreach($semesters as $sem)
+                                <option value="{{ $sem }}" {{ ($selectedSemester ?? '') === $sem ? 'selected' : '' }}>{{ $sem }}</option>
+                            @endforeach
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropdown Môn học trong kỳ -->
+                <div class="lg:col-span-4">
+                    <label for="filterSubject" class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        Môn học trong kỳ
+                    </label>
+                    <div class="relative">
+                        <select id="filterSubject" onchange="applyClientExamFilters()" class="w-full text-xs font-semibold rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-3 pr-8 text-slate-800 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all appearance-none cursor-pointer">
+                            <option value="">-- Tất cả môn học --</option>
+                            @foreach($subjectsWithSemester as $subj)
+                                <option value="{{ $subj['id'] }}" data-semester="{{ $subj['semester'] }}" {{ ((string)($selectedSubjectId ?? '')) === (string)$subj['id'] ? 'selected' : '' }}>
+                                    {{ $subj['name'] }} ({{ $subj['code'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tìm kiếm theo tên / mã -->
+                <div class="lg:col-span-3">
+                    <label for="filterSearch" class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Tìm kiếm bài thi
+                    </label>
+                    <input type="text" id="filterSearch" oninput="applyClientExamFilters()" placeholder="Tên bài thi hoặc mã đề..." class="w-full text-xs font-medium rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 px-3 text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all">
+                </div>
+
+                <!-- Nút đặt lại -->
+                <div class="lg:col-span-1">
+                    <button type="button" onclick="resetAllExamFilters()" class="w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95" title="Đặt lại bộ lọc">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Đặt lại</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Category Filter Pills -->
-            @if(count($categories) > 0)
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <button type="button" onclick="filterExamCategory('all')" id="tab-all" class="category-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-2xs">
-                        Tất cả ({{ $assignedExams->count() }})
-                    </button>
-                    @foreach($categories as $cat)
-                        @php
-                            $count = $assignedExams->filter(function($e) use ($cat) {
-                                return $cat['type'] === 'category' ? ($e->category_id == str_replace('cat_', '', $cat['id'])) : ($e->subject_id == str_replace('subj_', '', $cat['id']));
-                            })->count();
-                        @endphp
-                        <button type="button" onclick="filterExamCategory('{{ $cat['id'] }}')" id="tab-{{ $cat['id'] }}" class="category-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 shadow-2xs">
-                            {{ $cat['name'] }} ({{ $count }})
-                        </button>
-                    @endforeach
-                </div>
-            @endif
+            <!-- Active filter status -->
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+                <span>Hiển thị <strong id="visibleExamCount" class="text-blue-600 font-bold">{{ $assignedExams->count() }}</strong> / {{ $assignedExams->count() }} bài thi</span>
+                <span id="activeFilterDesc" class="text-slate-400 italic">Đang hiển thị tất cả</span>
+            </div>
         </div>
 
         @if($assignedExams->isEmpty())
@@ -138,11 +185,25 @@
             </div>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="examsContainer">
+                <!-- Empty state khi lọc không thấy -->
+                <div id="filterEmptyState" class="hidden col-span-full bg-white rounded-2xl p-10 text-center border border-slate-200/80 shadow-2xs">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-50 mb-2.5 text-amber-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-1">Không tìm thấy bài thi phù hợp</h3>
+                    <p class="text-xs text-slate-500 max-w-sm mx-auto mb-3">Không có bài thi nào khớp với kỳ học hoặc môn học bạn đã chọn.</p>
+                    <button type="button" onclick="resetAllExamFilters()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Xóa bộ lọc
+                    </button>
+                </div>
+
                 @foreach($assignedExams as $exam)
-                    @php
-                        $catKey = $exam->category ? 'cat_' . $exam->category->id : ($exam->subject ? 'subj_' . $exam->subject->id : 'none');
-                    @endphp
-                    <div class="exam-item-card bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative group" data-category="{{ $catKey }}">
+                    <div class="exam-item-card bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative group"
+                         data-semester="{{ $exam->semester ?? '' }}"
+                         data-subject-id="{{ $exam->subject_id }}"
+                         data-title="{{ strtolower($exam->title) }}"
+                         data-code="{{ strtolower($exam->code) }}">
                         <!-- Accent Top Border -->
                         <div class="h-1.5 w-full bg-{{ $exam->status_color }}-500"></div>
 
@@ -160,10 +221,18 @@
                                     {{ $exam->title }}
                                 </h3>
 
-                                <div class="flex items-center gap-2 mt-2 flex-wrap">
-                                    <span class="text-xs font-semibold text-slate-500">{{ $exam->subject->name ?? 'Môn học' }}</span>
+                                <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                                    @if(!empty($exam->semester))
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            <svg class="w-3 h-3 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            {{ $exam->semester }}
+                                        </span>
+                                    @endif
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                                        {{ $exam->subject->name ?? 'Môn học' }}
+                                    </span>
                                     @if($exam->category)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                                             {{ $exam->category->name }}
                                         </span>
                                     @endif
@@ -344,29 +413,112 @@
 
 </div>
 
-<!-- Category Filtering Script -->
+<!-- Semester & Subject Filtering Script -->
 <script>
-    function filterExamCategory(catId) {
-        // Update button states
-        document.querySelectorAll('.category-pill').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white', 'active');
-            btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200/80');
-        });
-        const activeBtn = document.getElementById('tab-' + catId);
-        if (activeBtn) {
-            activeBtn.classList.add('bg-blue-600', 'text-white', 'active');
-            activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200/80');
+    function onSemesterFilterChange() {
+        const semesterSelect = document.getElementById('filterSemester');
+        const selectedSem = semesterSelect ? semesterSelect.value.trim() : '';
+        const subjectSelect = document.getElementById('filterSubject');
+        
+        if (subjectSelect) {
+            const subjectOptions = subjectSelect.querySelectorAll('option');
+            let currentSubjectValid = false;
+
+            subjectOptions.forEach(opt => {
+                if (!opt.value) {
+                    opt.style.display = '';
+                    return;
+                }
+                const optSem = (opt.getAttribute('data-semester') || '').trim();
+                if (!selectedSem || optSem === selectedSem) {
+                    opt.style.display = '';
+                    if (opt.value === subjectSelect.value) {
+                        currentSubjectValid = true;
+                    }
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+
+            if (subjectSelect.value && !currentSubjectValid) {
+                subjectSelect.value = '';
+            }
         }
 
-        // Filter cards
+        applyClientExamFilters();
+    }
+
+    function applyClientExamFilters() {
+        const selectedSemester = document.getElementById('filterSemester')?.value.trim() || '';
+        const selectedSubject = document.getElementById('filterSubject')?.value.trim() || '';
+        const searchQuery = (document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
+
         const cards = document.querySelectorAll('.exam-item-card');
+        let visibleCount = 0;
+
         cards.forEach(card => {
-            if (catId === 'all' || card.dataset.category === catId) {
+            const cardSemester = (card.getAttribute('data-semester') || '').trim();
+            const cardSubjectId = (card.getAttribute('data-subject-id') || '').trim();
+            const cardTitle = (card.getAttribute('data-title') || '').toLowerCase();
+            const cardCode = (card.getAttribute('data-code') || '').toLowerCase();
+
+            const matchSemester = !selectedSemester || cardSemester === selectedSemester;
+            const matchSubject = !selectedSubject || cardSubjectId === selectedSubject;
+            const matchSearch = !searchQuery || cardTitle.includes(searchQuery) || cardCode.includes(searchQuery);
+
+            if (matchSemester && matchSubject && matchSearch) {
                 card.style.display = 'flex';
+                visibleCount++;
             } else {
                 card.style.display = 'none';
             }
         });
+
+        const emptyState = document.getElementById('filterEmptyState');
+        if (emptyState) {
+            if (visibleCount === 0 && cards.length > 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        const countElem = document.getElementById('visibleExamCount');
+        if (countElem) {
+            countElem.textContent = visibleCount;
+        }
+
+        const descElem = document.getElementById('activeFilterDesc');
+        if (descElem) {
+            let descs = [];
+            if (selectedSemester) descs.push(selectedSemester);
+            if (selectedSubject) {
+                const opt = document.querySelector(`#filterSubject option[value="${selectedSubject}"]`);
+                if (opt) descs.push(opt.textContent.trim());
+            }
+            if (searchQuery) descs.push('Từ khóa: "' + searchQuery + '"');
+
+            descElem.textContent = descs.length > 0 ? 'Đang lọc: ' + descs.join(' • ') : 'Đang hiển thị tất cả';
+        }
     }
+
+    function resetAllExamFilters() {
+        const sem = document.getElementById('filterSemester');
+        const subj = document.getElementById('filterSubject');
+        const search = document.getElementById('filterSearch');
+
+        if (sem) sem.value = '';
+        if (subj) {
+            subj.value = '';
+            subj.querySelectorAll('option').forEach(opt => opt.style.display = '');
+        }
+        if (search) search.value = '';
+
+        applyClientExamFilters();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        onSemesterFilterChange();
+    });
 </script>
 @endsection

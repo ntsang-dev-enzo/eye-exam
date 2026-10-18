@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\ExamAssignment;
 use App\Models\ExamAttempt;
+use App\Models\SchoolClass;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -15,16 +18,32 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $studentId = auth()->id();
+        $student = auth()->user()->load(['schoolClasses.course']);
         $now = now();
 
-        // 1. Fetch all assigned exams
-        $assignments = ExamAssignment::with(['exam.subject', 'exam.category'])
-            ->where('student_id', $studentId)
+        $studentClassIds = $student->schoolClasses->pluck('id')->toArray();
+
+        // 1. Fetch all assigned exams (by student_id or student's class_id)
+        $assignments = ExamAssignment::with(['exam.subject.courses', 'exam.category', 'schoolClass.course'])
+            ->where(function ($q) use ($studentId, $studentClassIds) {
+                $q->where('student_id', $studentId);
+                if (!empty($studentClassIds)) {
+                    $q->orWhereIn('class_id', $studentClassIds);
+                }
+            })
             ->latest('id')
             ->get();
 
         $assignedExams = $assignments->map(function ($assignment) use ($studentId, $now) {
             $exam = $assignment->exam;
+            if (!$exam) {
+                return null;
+            }
+
+            // Gán thông tin kỳ học cho bài thi
+            $examSemester = $assignment->schoolClass?->course?->semester 
+                ?? ($exam->subject?->courses?->first()?->semester ?? 'Học kỳ 1');
+            $exam->semester = $examSemester;
             
             $attempts = ExamAttempt::where('exam_id', $exam->id)
                 ->where('student_id', $studentId)
@@ -76,41 +95,71 @@ class DashboardController extends Controller
             }
 
             return $exam;
-        });
+        })->filter()->unique('id')->values();
 
-        // 2. Fetch attempts
+        // 2. Fetch attempts for recent history
         $attempts = ExamAttempt::with(['exam.subject', 'exam.category'])
             ->where('student_id', $studentId)
             ->latest('id')
             ->get();
 
-        // 3. Stats Calculation
+        // 3. Stats Calculation (Bỏ điểm trung bình theo yêu cầu)
         $submittedAttempts = $attempts->where('status', 'submitted');
         $totalSubmitted = $submittedAttempts->count();
-        $avgScore = $totalSubmitted > 0 ? round($submittedAttempts->avg('score_value'), 1) : null;
         $inProgressCount = $attempts->where('status', 'in_progress')->count();
         $totalAssigned = $assignedExams->count();
 
         $stats = [
             'total_assigned' => $totalAssigned,
             'total_submitted' => $totalSubmitted,
-            'avg_score' => $avgScore,
             'in_progress_count' => $inProgressCount,
         ];
 
-        // 4. Extract unique categories & subjects for filtering
-        $categories = $assignedExams->map(function ($exam) {
-            return $exam->category ? [
-                'id' => 'cat_' . $exam->category->id,
-                'name' => $exam->category->name,
-                'type' => 'category'
-            ] : ($exam->subject ? [
-                'id' => 'subj_' . $exam->subject->id,
-                'name' => $exam->subject->name,
-                'type' => 'subject'
-            ] : null);
-        })->filter()->unique('id')->values();
+        // 4. Danh sách các học kỳ (từ Course hoặc mặc định)
+        $semesters = Course::distinct()->pluck('semester')->filter()->values();
+        if ($semesters->isEmpty()) {
+            $semesters = collect(['Học kỳ 1', 'Học kỳ 2', 'Học kỳ 3']);
+        } else {
+            $semesters = $semesters->sort()->values();
+        }
 
-        return view('student.dashboard', compact('assignedExams', 'attempts', 'stats', 'categories'));
+        // 5. Danh sách các môn học kèm kỳ học
+        $subjectsWithSemester = Subject::with('courses')
+            ->where('status', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($subj) {
+                $sem = $subj->courses->first()?->semester ?? 'Học kỳ 1';
+                return [
+                    'id' => $subj->id,
+                    'name' => $subj->name,
+                    'code' => $subj->code,
+                    'semester' => $sem,
+                ];
+            });
+
+        // 6. Xử lý bộ lọc nếu có request
+        $selectedSemester = $request->input('semester');
+        $selectedSubjectId = $request->input('subject_id');
+
+        $filteredExams = $assignedExams;
+        if (!empty($selectedSemester)) {
+            $filteredExams = $filteredExams->filter(fn($e) => $e->semester === $selectedSemester)->values();
+        }
+        if (!empty($selectedSubjectId)) {
+            $filteredExams = $filteredExams->filter(fn($e) => (int) $e->subject_id === (int) $selectedSubjectId)->values();
+        }
+
+        return view('student.dashboard', compact(
+            'assignedExams',
+            'filteredExams',
+            'attempts',
+            'stats',
+            'semesters',
+            'subjectsWithSemester',
+            'selectedSemester',
+            'selectedSubjectId'
+        ));
     }
 }
+

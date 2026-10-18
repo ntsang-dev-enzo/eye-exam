@@ -10,10 +10,18 @@
             <span class="text-gray-400">/</span>
             <span class="text-sm font-semibold text-gray-900">Kết quả Đề thi</span>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{{ route('teacher.exams.export-excel', $exam) }}" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl transition-colors font-semibold text-sm flex items-center gap-2 shadow-2xs" title="Tải bảng điểm Excel (.xls)">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Xuất Excel
+            </a>
+            <a href="{{ route('teacher.exams.export-pdf', $exam) }}?print=1" target="_blank" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl transition-colors font-semibold text-sm flex items-center gap-2 shadow-2xs" title="In hoặc lưu báo cáo PDF">
+                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Xuất PDF
+            </a>
             <a href="{{ route('teacher.exams.monitor', $exam) }}" class="px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors font-semibold text-sm flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-                Vào phòng giám sát trực tiếp
+                Giám sát trực tiếp
             </a>
             <a href="{{ route('teacher.exams.index') }}" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm">
                 Quay lại

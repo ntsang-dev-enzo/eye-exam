@@ -129,6 +129,11 @@
                     @endif
                 </form>
                 
+                <button type="button" onclick="openExportModal()" class="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-2xl shadow-2xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shrink-0" title="Xuất bảng điểm PDF hoặc Excel của bài thi">
+                    <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Xuất Báo Cáo
+                </button>
+
                 <a href="{{ route('teacher.exams.create') }}" class="inline-flex items-center justify-center px-4.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-2xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shrink-0">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
@@ -222,13 +227,19 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xem kết quả">
+                                    <a href="{{ route('teacher.exams.export-excel', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xuất báo cáo Excel (Bảng điểm môn {{ $exam->subject->name ?? 'N/A' }})">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </a>
+                                    <a href="{{ route('teacher.exams.export-pdf', $exam) }}?print=1" target="_blank" class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors" title="Xuất báo cáo PDF / In (Bảng điểm môn {{ $exam->subject->name ?? 'N/A' }})">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                    </a>
+                                    <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors" title="Xem kết quả & phân tích">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                                     </a>
                                     <a href="{{ route('teacher.exams.edit', $exam) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="Sửa đề thi">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </a>
-                                    <a href="{{ route('teacher.exams.monitor', $exam) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors" title="Giám sát phòng thi">
+                                    <a href="{{ route('teacher.exams.monitor', $exam) }}" class="p-1.5 text-gray-400 hover:text-cyan-600 rounded-lg hover:bg-cyan-50 transition-colors" title="Giám sát phòng thi">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
                                     <!-- Nút Xóa đề thi -->
@@ -288,6 +299,87 @@
         </div>
     </div>
 
+    <!-- Modal Xuất Báo Cáo Kỳ Thi & Môn Học -->
+    <div id="exportModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onclick="closeExportModal()"></div>
+        <div class="flex items-center justify-center min-h-screen px-4 text-center sm:p-0">
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm">
+                            CTUT
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Xuất Báo Cáo Kỳ Thi</h3>
+                            <p class="text-xs text-gray-600 font-medium">Trường Đại học Kỹ thuật - Công nghệ Cần Thơ</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4 pt-1">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Chọn bài thi cần xuất báo cáo</label>
+                        <select id="exportExamSelect" onchange="updateExportLinks()" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            @forelse($exams as $e)
+                                <option value="{{ $e->id }}" 
+                                        data-title="{{ $e->title }}" 
+                                        data-code="{{ $e->code }}" 
+                                        data-subject="{{ $e->subject->name ?? 'N/A' }}"
+                                        data-questions="{{ $e->total_questions }}"
+                                        data-duration="{{ $e->duration_minutes }}"
+                                        data-excel="{{ route('teacher.exams.export-excel', $e) }}"
+                                        data-pdf="{{ route('teacher.exams.export-pdf', $e) }}?print=1">
+                                    {{ $e->title }} ({{ $e->code }}) - Môn: {{ $e->subject->name ?? 'N/A' }}
+                                </option>
+                            @empty
+                                <option value="">Không có bài thi nào</option>
+                            @endforelse
+                        </select>
+                    </div>
+
+                    <!-- Card thông tin bài thi được chọn -->
+                    <div id="exportPreviewCard" class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5 text-xs text-gray-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500">Môn học:</span>
+                            <span id="previewSubject" class="font-bold text-blue-700"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500">Mã đề thi:</span>
+                            <span id="previewCode" class="font-mono font-bold text-gray-800"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500">Cấu trúc:</span>
+                            <span id="previewStructure" class="font-medium text-gray-800"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <!-- Nút Xuất Excel -->
+                        <a id="modalExcelBtn" href="#" class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all text-center">
+                            <span class="font-bold text-sm text-emerald-800">Xuất file Excel</span>
+                            <span class="text-xs text-emerald-700 mt-1">Định dạng bảng tính .xls</span>
+                        </a>
+
+                        <!-- Nút Xuất PDF -->
+                        <a id="modalPdfBtn" href="#" target="_blank" class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 transition-all text-center">
+                            <span class="font-bold text-sm text-rose-800">Xuất file PDF</span>
+                            <span class="text-xs text-rose-700 mt-1">Mở bản in chuẩn A4</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="pt-2 text-right">
+                    <button type="button" onclick="closeExportModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-200 transition-colors">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function confirmDeleteExam(deleteUrl, examTitle, examCode) {
             document.getElementById('deleteExamForm').action = deleteUrl;
@@ -299,5 +391,42 @@
         function closeDeleteModal() {
             document.getElementById('deleteModal').classList.add('hidden');
         }
+
+        function openExportModal(examId = null) {
+            const select = document.getElementById('exportExamSelect');
+            if (!select || select.options.length === 0) return;
+            if (examId) {
+                select.value = examId;
+            }
+            updateExportLinks();
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function updateExportLinks() {
+            const select = document.getElementById('exportExamSelect');
+            if (!select || !select.selectedOptions || select.selectedOptions.length === 0) return;
+            const opt = select.selectedOptions[0];
+            if (!opt || !opt.value) {
+                document.getElementById('exportPreviewCard').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('exportPreviewCard').classList.remove('hidden');
+            document.getElementById('previewSubject').textContent = opt.dataset.subject || 'N/A';
+            document.getElementById('previewCode').textContent = opt.dataset.code || 'N/A';
+            document.getElementById('previewStructure').textContent = `${opt.dataset.questions || 0} câu hỏi • ${opt.dataset.duration || 0} phút`;
+
+            document.getElementById('modalExcelBtn').href = opt.dataset.excel;
+            document.getElementById('modalPdfBtn').href = opt.dataset.pdf;
+        }
+
+        // Initialize modal links on ready
+        document.addEventListener('DOMContentLoaded', () => {
+            updateExportLinks();
+        });
     </script>
 @endsection

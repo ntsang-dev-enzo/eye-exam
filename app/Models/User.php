@@ -113,6 +113,21 @@ class User extends Authenticatable
         return $this->hasMany(AntiCheatLog::class, 'student_id')->orderBy('occurred_at', 'desc');
     }
 
+    public function schoolClasses()
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_students', 'student_id', 'class_id');
+    }
+
+    public function getClassNameAttribute(): ?string
+    {
+        return $this->schoolClasses->first()?->name ?? $this->schoolClasses()->first()?->name;
+    }
+
+    public function getDepartmentNameAttribute(): string
+    {
+        return $this->department ?? 'Công nghệ thông tin';
+    }
+
     /**
      * Get dashboard URL based on user role.
      */
