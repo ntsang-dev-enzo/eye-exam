@@ -463,4 +463,148 @@ class ExamController extends Controller
             'snapshots' => $snapshots,
         ]);
     }
+
+    /**
+     * Export exam results and statistics to Excel (.xls formatted table).
+     */
+    public function exportExcel(Exam $exam)
+    {
+        if ($exam->created_by !== auth()->id()) {
+            abort(403, 'Bạn không có quyền xuất báo cáo đề thi này.');
+        }
+
+        $data = $this->getExamReportData($exam);
+
+        $sanitizedSubject = Str::slug($exam->subject->name ?? 'mon_hoc', '_');
+        $sanitizedTitle = Str::slug($exam->title, '_');
+        $filename = "Bang_diem_{$sanitizedSubject}_{$sanitizedTitle}_" . date('Ymd_His') . ".xls";
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->view('teacher.exams.export-excel', $data, 200, $headers);
+    }
+
+    /**
+     * Display printable PDF report of an exam for a subject.
+     */
+    public function exportPdf(Exam $exam)
+    {
+        if ($exam->created_by !== auth()->id()) {
+            abort(403, 'Bạn không có quyền xuất báo cáo đề thi này.');
+        }
+
+        $data = $this->getExamReportData($exam);
+
+        return view('teacher.exams.export-pdf', $data);
+    }
+
+    /**
+     * Helper to prepare statistics and attempts data for a single exam of a subject.
+     */
+    protected function getExamReportData(Exam $exam): array
+    {
+        $exam->load([
+            'subject',
+            'category',
+            'creator',
+            'assignments.schoolClass',
+        ]);
+
+        $attempts = ExamAttempt::with([
+                'student.schoolClasses',
+                'antiCheatLogs',
+            ])
+            ->where('exam_id', $exam->id)
+            ->where('status', 'submitted')
+            ->orderByDesc('score_value')
+            ->get();
+
+        $totalAttempts = $attempts->count();
+        $averageScore = $totalAttempts > 0 ? round((float) $attempts->avg('score_value'), 2) : 0;
+        $maxScore = $totalAttempts > 0 ? (float) $attempts->max('score_value') : 0;
+        $minScore = $totalAttempts > 0 ? (float) $attempts->min('score_value') : 0;
+        $passedCount = $attempts->where('score_value', '>=', 5.0)->count();
+        $failedCount = $totalAttempts - $passedCount;
+        $passRate = $totalAttempts > 0 ? round(($passedCount / $totalAttempts) * 100, 1) : 0;
+
+        // Phân loại dải điểm
+        $brackets = [
+            'excellent' => $attempts->where('score_value', '>=', 9.0)->count(),
+            'good' => $attempts->filter(fn($a) => $a->score_value >= 8.0 && $a->score_value < 9.0)->count(),
+            'fair' => $attempts->filter(fn($a) => $a->score_value >= 6.5 && $a->score_value < 8.0)->count(),
+            'average' => $attempts->filter(fn($a) => $a->score_value >= 5.0 && $a->score_value < 6.5)->count(),
+            'weak' => $attempts->where('score_value', '<', 5.0)->count(),
+        ];
+
+        $assignedClasses = $exam->assignments->map(fn($a) => $a->schoolClass->name ?? null)->filter()->unique()->values()->implode(', ');
+        if (empty($assignedClasses)) {
+            $assignedClasses = 'Tất cả sinh viên theo danh sách';
+        }
+
+        $formattedAttempts = $attempts->map(function ($attempt, $index) use ($exam) {
+            $score = (float) $attempt->score_value;
+            $classification = match (true) {
+                $score >= 9.0 => 'Xuất sắc',
+                $score >= 8.0 => 'Giỏi',
+                $score >= 6.5 => 'Khá',
+                $score >= 5.0 => 'Trung bình',
+                default => 'Chưa đạt / Yếu',
+            };
+
+            $durationMinutes = 0;
+            if ($attempt->started_at && $attempt->submitted_at) {
+                $durationMinutes = round($attempt->started_at->diffInSeconds($attempt->submitted_at) / 60, 1);
+            }
+
+            $className = $attempt->student?->schoolClasses?->first()?->name ?? 'N/A';
+
+            return [
+                'index' => $index + 1,
+                'student_code' => $attempt->student->code ?? ('SV' . str_pad($attempt->student_id, 4, '0', STR_PAD_LEFT)),
+                'student_name' => $attempt->student->name ?? 'Sinh viên chưa cập nhật tên',
+                'student_email' => $attempt->student->email ?? '',
+                'class_name' => $className,
+                'score' => number_format($score, 2),
+                'score_raw' => $score,
+                'correct_answers' => $attempt->correct_answers ?? 0,
+                'wrong_answers' => $attempt->wrong_answers ?? 0,
+                'unanswered' => $attempt->unanswered ?? 0,
+                'total_questions' => $exam->total_questions,
+                'started_at' => $attempt->started_at ? $attempt->started_at->format('d/m/Y H:i:s') : 'N/A',
+                'submitted_at' => $attempt->submitted_at ? $attempt->submitted_at->format('d/m/Y H:i:s') : 'N/A',
+                'duration_text' => $durationMinutes > 0 ? "{$durationMinutes} phút" : 'N/A',
+                'cheat_warnings' => $attempt->cheat_warnings ?? 0,
+                'out_of_screen_time' => $attempt->out_of_screen_time ?? 0,
+                'face_similarity' => $attempt->face_similarity ? number_format($attempt->face_similarity, 1) . '%' : ($attempt->face_verified_at ? 'Hợp lệ' : 'Không có'),
+                'classification' => $classification,
+                'status_result' => $score >= 5.0 ? 'Đạt' : 'Không đạt',
+            ];
+        });
+
+        return [
+            'exam' => $exam,
+            'attempts' => $formattedAttempts,
+            'assignedClasses' => $assignedClasses,
+            'stats' => [
+                'total' => $totalAttempts,
+                'average' => $averageScore,
+                'max' => $maxScore,
+                'min' => $minScore,
+                'passed' => $passedCount,
+                'failed' => $failedCount,
+                'pass_rate' => $passRate,
+                'fail_rate' => $totalAttempts > 0 ? round(100 - $passRate, 1) : 0,
+                'brackets' => $brackets,
+            ],
+            'generated_at' => now()->format('d/m/Y H:i:s'),
+            'teacher_name' => auth()->user()->name ?? ($exam->creator->name ?? 'Giảng viên'),
+        ];
+    }
 }
+

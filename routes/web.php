@@ -107,6 +107,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/de-thi/{exam}/trang-thai', [\App\Http\Controllers\Teacher\ExamController::class, 'updateStatus'])->name('exams.update-status');
         Route::patch('/de-thi/{exam}/cai-dat-nhanh', [\App\Http\Controllers\Teacher\ExamController::class, 'updateQuickSettings'])->name('exams.update-quick-settings');
         Route::get('/de-thi/{exam}/ket-qua', [\App\Http\Controllers\Teacher\ExamController::class, 'results'])->name('exams.results');
+        Route::get('/de-thi/{exam}/xuat-excel', [\App\Http\Controllers\Teacher\ExamController::class, 'exportExcel'])->name('exams.export-excel');
+        Route::get('/de-thi/{exam}/xuat-pdf', [\App\Http\Controllers\Teacher\ExamController::class, 'exportPdf'])->name('exams.export-pdf');
         Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Teacher\ExamController::class, 'monitor'])->name('exams.monitor');
         Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Teacher\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
         Route::get('/de-thi/{exam}/sinh-vien/{attempt}/hanh-vi', [\App\Http\Controllers\Teacher\ExamController::class, 'studentBehavior'])->name('exams.student-behavior');
@@ -134,9 +136,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/tai-lieu/{document}/xem', [TeacherDocumentController::class, 'view'])->name('documents.view');
         Route::get('/tai-lieu/{document}/tai-ve', [TeacherDocumentController::class, 'download'])->name('documents.download');
 
-        // Reports and Statistics (Báo cáo Thống kê)
-        Route::get('/bao-cao-thong-ke', [TeacherReportController::class, 'index'])->name('reports.index');
-        Route::get('/bao-cao-thong-ke/xuat-csv', [TeacherReportController::class, 'exportCsv'])->name('reports.export');
+        // Chuyển hướng trang báo cáo thống kê cũ sang Quản lý kỳ thi
+        Route::get('/bao-cao-thong-ke', function () {
+            return redirect()->route('teacher.exams.index');
+        })->name('reports.index');
+        Route::get('/bao-cao-thong-ke/xuat-csv', function () {
+            return redirect()->route('teacher.exams.index');
+        })->name('reports.export');
     });
 
     // Student routes (Protected by role:student)
