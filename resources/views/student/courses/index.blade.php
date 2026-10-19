@@ -235,11 +235,11 @@
                                     </svg>
                                     Khối lượng học phần
                                 </span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-slate-700 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-semibold text-slate-700">
                                         {{ $course->subjects->count() }} môn
                                     </span>
-                                    <span class="text-xs font-extrabold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-100 font-mono shadow-2xs">
+                                    <span class="text-xs font-bold text-blue-600 font-mono">
                                         {{ $course->total_credits }} TC
                                     </span>
                                 </div>
@@ -343,7 +343,7 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-[11px] font-mono font-bold text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-200" x-text="'#' + (idx + 1)"></span>
                                         <h4 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition-colors" x-text="subject.name"></h4>
-                                        <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200/70 rounded-md font-mono font-bold text-[11px]" x-text="(subject.credits || 3) + ' TC'"></span>
+                                        <span class="text-xs font-mono font-bold text-blue-600" x-text="(subject.credits || 3) + ' TC'"></span>
                                     </div>
                                     <div class="flex items-center gap-3 text-xs text-slate-500">
                                         <span class="font-mono" x-text="'Mã học phần: ' + subject.code"></span>
@@ -351,7 +351,7 @@
                                         <span x-text="subject.department || 'Bộ môn Chuyên ngành'"></span>
                                     </div>
                                 </div>
-                                <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-full font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-2xs">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 shrink-0">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     Đang học
                                 </span>

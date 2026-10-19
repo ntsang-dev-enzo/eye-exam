@@ -31,38 +31,63 @@ Route::middleware('auth')->group(function () {
     // Admin routes (Protected by role:admin)
     Route::prefix('admin')->middleware('role:admin')->name('admin.')->group(function () {
         Route::get('/tong-quan', [AdminDashboardController::class, 'index'])->name('dashboard');
-        
+
         // User Account Management
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/reset-face', [AdminUserController::class, 'resetFaceId'])->name('users.reset-face');
         Route::post('/users/{user}/avatar', [AdminUserController::class, 'updateAvatar'])->name('users.update-avatar');
         Route::delete('/users/{user}/avatar', [AdminUserController::class, 'deleteAvatar'])->name('users.delete-avatar');
-        
-        // Subjects
+
+        // 1. Quản lý Khoa (Faculties)
+        Route::get('/khoa', [\App\Http\Controllers\Admin\FacultyController::class, 'index'])->name('faculties.index');
+        Route::get('/khoa/tao-moi', [\App\Http\Controllers\Admin\FacultyController::class, 'create'])->name('faculties.create');
+        Route::post('/khoa', [\App\Http\Controllers\Admin\FacultyController::class, 'store'])->name('faculties.store');
+        Route::get('/khoa/{faculty}/sua', [\App\Http\Controllers\Admin\FacultyController::class, 'edit'])->name('faculties.edit');
+        Route::put('/khoa/{faculty}', [\App\Http\Controllers\Admin\FacultyController::class, 'update'])->name('faculties.update');
+        Route::delete('/khoa/{faculty}', [\App\Http\Controllers\Admin\FacultyController::class, 'destroy'])->name('faculties.destroy');
+
+        // 2. Quản lý Bộ môn (Departments)
+        Route::get('/bo-mon', [\App\Http\Controllers\Admin\DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/bo-mon/tao-moi', [\App\Http\Controllers\Admin\DepartmentController::class, 'create'])->name('departments.create');
+        Route::post('/bo-mon', [\App\Http\Controllers\Admin\DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('/bo-mon/{department}/sua', [\App\Http\Controllers\Admin\DepartmentController::class, 'edit'])->name('departments.edit');
+        Route::put('/bo-mon/{department}', [\App\Http\Controllers\Admin\DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('/bo-mon/{department}', [\App\Http\Controllers\Admin\DepartmentController::class, 'destroy'])->name('departments.destroy');
+        Route::get('/api/khoa/{faculty}/bo-mon', [\App\Http\Controllers\Admin\DepartmentController::class, 'getByFaculty'])->name('api.faculties.departments');
+
+        // 3. Quản lý Học kỳ (Semesters)
+        Route::get('/hoc-ky', [\App\Http\Controllers\Admin\SemesterController::class, 'index'])->name('semesters.index');
+        Route::get('/hoc-ky/tao-moi', [\App\Http\Controllers\Admin\SemesterController::class, 'create'])->name('semesters.create');
+        Route::post('/hoc-ky', [\App\Http\Controllers\Admin\SemesterController::class, 'store'])->name('semesters.store');
+        Route::get('/hoc-ky/{semester}/sua', [\App\Http\Controllers\Admin\SemesterController::class, 'edit'])->name('semesters.edit');
+        Route::put('/hoc-ky/{semester}', [\App\Http\Controllers\Admin\SemesterController::class, 'update'])->name('semesters.update');
+        Route::delete('/hoc-ky/{semester}', [\App\Http\Controllers\Admin\SemesterController::class, 'destroy'])->name('semesters.destroy');
+        Route::post('/hoc-ky/{semester}/hien-tai', [\App\Http\Controllers\Admin\SemesterController::class, 'setCurrent'])->name('semesters.set-current');
+
+        // 4. Quản lý Môn học (Subjects)
         Route::get('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('subjects.index');
         Route::get('/mon-hoc/tao-moi', [\App\Http\Controllers\Admin\SubjectController::class, 'create'])->name('subjects.create');
         Route::post('/mon-hoc', [\App\Http\Controllers\Admin\SubjectController::class, 'store'])->name('subjects.store');
         Route::get('/mon-hoc/{subject}/sua', [\App\Http\Controllers\Admin\SubjectController::class, 'edit'])->name('subjects.edit');
         Route::put('/mon-hoc/{subject}', [\App\Http\Controllers\Admin\SubjectController::class, 'update'])->name('subjects.update');
+        Route::delete('/mon-hoc/{subject}', [\App\Http\Controllers\Admin\SubjectController::class, 'destroy'])->name('subjects.destroy');
+        Route::get('/api/mon-hoc/{subject}/giang-vien', [\App\Http\Controllers\Admin\SubjectController::class, 'getQualifiedTeachers'])->name('api.subjects.teachers');
 
-        // Classes
+        // 5. Quản lý Lớp học phần (Classes / Sections)
         Route::get('/lop-hoc', [\App\Http\Controllers\Admin\ClassController::class, 'index'])->name('classes.index');
         Route::get('/lop-hoc/tao-moi', [\App\Http\Controllers\Admin\ClassController::class, 'create'])->name('classes.create');
         Route::post('/lop-hoc', [\App\Http\Controllers\Admin\ClassController::class, 'store'])->name('classes.store');
         Route::get('/lop-hoc/{class}/sua', [\App\Http\Controllers\Admin\ClassController::class, 'edit'])->name('classes.edit');
         Route::put('/lop-hoc/{class}', [\App\Http\Controllers\Admin\ClassController::class, 'update'])->name('classes.update');
         Route::get('/lop-hoc/{class}', [\App\Http\Controllers\Admin\ClassController::class, 'show'])->name('classes.show');
-        Route::post('/lop-hoc/{class}/assign', [\App\Http\Controllers\Admin\ClassController::class, 'assign'])->name('classes.assign');
-        Route::delete('/lop-hoc/{class}/assign/{subject_id}', [\App\Http\Controllers\Admin\ClassController::class, 'removeAssign'])->name('classes.remove-assign');
-        Route::post('/lop-hoc/{class}/sinh-vien', [\App\Http\Controllers\Admin\ClassController::class, 'addStudent'])->name('classes.add-student');
-        Route::delete('/lop-hoc/{class}/sinh-vien/{student}', [\App\Http\Controllers\Admin\ClassController::class, 'removeStudent'])->name('classes.remove-student');
+        Route::delete('/lop-hoc/{class}', [\App\Http\Controllers\Admin\ClassController::class, 'destroy'])->name('classes.destroy');
 
-        // Exams
-        Route::get('/de-thi', [\App\Http\Controllers\Admin\ExamController::class, 'index'])->name('exams.index');
-        Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Admin\ExamController::class, 'monitor'])->name('exams.monitor');
-        Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Admin\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
+        // Ghi danh & Sinh viên lớp học phần
+        Route::post('/lop-hoc/{class}/ghi-danh', [\App\Http\Controllers\Admin\ClassEnrollmentController::class, 'enroll'])->name('classes.enroll');
+        Route::delete('/lop-hoc/{class}/sinh-vien/{student}', [\App\Http\Controllers\Admin\ClassEnrollmentController::class, 'remove'])->name('classes.remove-student');
+        Route::post('/lop-hoc/{class}/import-sinh-vien', [\App\Http\Controllers\Admin\ClassEnrollmentController::class, 'importExcel'])->name('classes.import-students');
 
-        // Course Management (Khóa học) - Exact Vietnamese URLs
+        // Khóa học cũ (để tương thích ngược nếu còn link)
         Route::get('/khoa-hoc', [AdminCourseController::class, 'index'])->name('khoa-hoc.index');
         Route::get('/khoa-hoc/them-moi', [AdminCourseController::class, 'create'])->name('khoa-hoc.create');
         Route::post('/khoa-hoc', [AdminCourseController::class, 'store'])->name('khoa-hoc.store');
@@ -70,18 +95,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/khoa-hoc/{khoaHoc}/chinh-sua', [AdminCourseController::class, 'edit'])->name('khoa-hoc.edit');
         Route::put('/khoa-hoc/{khoaHoc}', [AdminCourseController::class, 'update'])->name('khoa-hoc.update');
         Route::delete('/khoa-hoc/{khoaHoc}', [AdminCourseController::class, 'destroy'])->name('khoa-hoc.destroy');
+
+        // Exams
+        Route::get('/de-thi', [\App\Http\Controllers\Admin\ExamController::class, 'index'])->name('exams.index');
+        Route::get('/de-thi/{exam}/giam-sat', [\App\Http\Controllers\Admin\ExamController::class, 'monitor'])->name('exams.monitor');
+        Route::get('/de-thi/{exam}/api-monitor', [\App\Http\Controllers\Admin\ExamController::class, 'apiMonitor'])->name('exams.api-monitor');
     });
 
     // Teacher routes (Protected by role:teacher)
     Route::prefix('giang-vien')->middleware('role:teacher')->name('teacher.')->group(function () {
         Route::get('/tong-quan', [TeacherDashboardController::class, 'index'])->name('dashboard');
-        
+
         // Questions API
         Route::get('/api/cau-hoi', [TeacherQuestionController::class, 'apiIndex'])->name('api.questions.index');
         Route::post('/api/cau-hoi', [TeacherQuestionController::class, 'apiStore'])->name('api.questions.store');
         Route::get('/api/danh-muc', [TeacherQuestionController::class, 'apiCategories'])->name('api.categories.index');
         Route::post('/api/danh-muc', [TeacherQuestionController::class, 'apiCategoryStore'])->name('api.categories.store');
-        
+
         // Categories (Danh mục môn học)
         Route::get('/danh-muc-mon-hoc', [TeacherCategoryController::class, 'index'])->name('categories.index');
         Route::post('/danh-muc-mon-hoc', [TeacherCategoryController::class, 'store'])->name('categories.store');
@@ -96,7 +126,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/cau-hoi/{question}/sua', [TeacherQuestionController::class, 'edit'])->name('questions.edit');
         Route::put('/cau-hoi/{question}', [TeacherQuestionController::class, 'update'])->name('questions.update');
         Route::delete('/cau-hoi/{question}', [TeacherQuestionController::class, 'destroy'])->name('questions.destroy');
-        
+
         // Exams
         Route::get('/de-thi', [\App\Http\Controllers\Teacher\ExamController::class, 'index'])->name('exams.index');
         Route::get('/de-thi/tao-moi', [\App\Http\Controllers\Teacher\ExamController::class, 'create'])->name('exams.create');
@@ -148,7 +178,7 @@ Route::middleware('auth')->group(function () {
     // Student routes (Protected by role:student)
     Route::prefix('sinh-vien')->name('student.')->middleware(['role:student', \App\Http\Middleware\CheckActiveExam::class])->group(function () {
         Route::get('/tong-quan', [\App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
-        
+
         Route::get('/ky-thi-cua-toi', [\App\Http\Controllers\Student\ExamController::class, 'index'])->name('exams.index');
         Route::post('/de-thi/tham-gia', [\App\Http\Controllers\Student\ExamController::class, 'join'])->name('exams.join');
         Route::get('/de-thi/{exam}/lam-bai', [\App\Http\Controllers\Student\ExamController::class, 'take'])->name('exams.take');

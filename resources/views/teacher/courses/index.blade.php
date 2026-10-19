@@ -58,7 +58,8 @@
                             </span>
                             <h2 class="text-lg font-bold text-gray-900 leading-tight">{{ $course->name }}</h2>
                         </div>
-                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                             Đang mở
                         </span>
                     </div>

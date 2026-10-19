@@ -13,7 +13,7 @@ class ClassController extends Controller
     {
         $studentId = auth()->id();
 
-        $classes = SchoolClass::with(['teacher', 'course'])
+        $classes = SchoolClass::with(['teacher', 'course', 'semester', 'subject.department.faculty'])
             ->withCount('students')
             ->whereHas('students', function ($q) use ($studentId) {
                 $q->where('users.id', $studentId);
@@ -34,7 +34,7 @@ class ClassController extends Controller
             abort(403, 'Bạn không thuộc lớp học này.');
         }
 
-        $class->load(['teacher', 'course']);
+        $class->load(['teacher', 'course', 'semester', 'subject.department.faculty']);
 
         // Get subjects & teachers assigned to this class
         $subjectTeachers = DB::table('class_subject_teacher')

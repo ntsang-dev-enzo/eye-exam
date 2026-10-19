@@ -14,11 +14,25 @@ class SchoolClass extends Model
     protected $fillable = [
         'code',
         'name',
+        'subject_id',
+        'semester_id',
         'teacher_id',
         'course_id',
+        'room',
+        'max_students',
         'description',
         'status',
     ];
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'semester_id');
+    }
 
     public function teacher()
     {

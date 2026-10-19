@@ -13,25 +13,23 @@ class ClassController extends Controller
     {
         $teacherId = auth()->id();
 
-        // Homeroom classes
-        $homeroomClasses = SchoolClass::with(['course'])->withCount('students')
-            ->where('teacher_id', $teacherId)
-            ->latest()
-            ->get();
-
-        // Subject teaching classes
+        // Lấy danh sách ID các lớp mà giảng viên được phân công bộ môn
         $subjectClassIds = DB::table('class_subject_teacher')
             ->where('teacher_id', $teacherId)
             ->pluck('class_id')
             ->toArray();
 
-        $teachingClasses = SchoolClass::with(['course'])->withCount('students')
-            ->whereIn('id', $subjectClassIds)
-            ->where('teacher_id', '!=', $teacherId)
+        // Danh sách tất cả các lớp học phần mà giảng viên đứng lớp hoặc phụ trách bộ môn
+        $classes = SchoolClass::with(['course', 'semester', 'subject.department.faculty', 'teacher'])
+            ->withCount('students')
+            ->where(function($q) use ($teacherId, $subjectClassIds) {
+                $q->where('teacher_id', $teacherId)
+                  ->orWhereIn('id', $subjectClassIds);
+            })
             ->latest()
             ->get();
 
-        return view('teacher.classes.index', compact('homeroomClasses', 'teachingClasses'));
+        return view('teacher.classes.index', compact('classes'));
     }
 
     public function show(Request $request, SchoolClass $class)
@@ -47,7 +45,7 @@ class ClassController extends Controller
             abort(403, 'Bạn không có quyền xem lớp này.');
         }
 
-        $class->load(['course', 'teacher']);
+        $class->load(['course', 'semester', 'subject.department.faculty', 'teacher']);
 
         $query = $class->students();
         

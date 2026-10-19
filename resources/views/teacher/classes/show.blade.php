@@ -13,7 +13,7 @@
                 <a href="{{ route('teacher.classes.index') }}"
                     class="font-semibold text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    Quản lý lớp
+                    Lớp học phần
                 </a>
                 <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 <span class="font-bold text-slate-500 font-mono">{{ $class->code }}</span>
@@ -21,17 +21,10 @@
 
             <div class="flex flex-wrap items-center gap-2 mt-1">
                 <h1 class="text-2xl sm:text-3xl font-black text-[#0a2540] tracking-tight">{{ $class->name }}</h1>
-                @if($isHomeroom)
-                    <span class="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-xl border border-blue-100 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
-                        Lớp chủ nhiệm
-                    </span>
-                @else
-                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-100 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Giảng dạy bộ môn
-                    </span>
-                @endif
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Lớp học phần phụ trách
+                </span>
             </div>
         </div>
 
@@ -71,10 +64,21 @@
                 <p class="text-xl font-black text-blue-600 font-mono">{{ $class->code }}</p>
             </div>
             <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Khóa học / Học kỳ</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Học kỳ / Môn học</p>
                 <p class="text-sm font-bold text-[#0a2540] leading-snug">
-                    {{ $class->course ? $class->course->name . ' (' . $class->course->semester . ')' : 'Chưa gắn khóa học' }}
+                    @if($class->semester)
+                        {{ $class->semester->name }} ({{ $class->semester->academic_year }})
+                    @elseif($class->course)
+                        {{ $class->course->name }} ({{ $class->course->semester }})
+                    @else
+                        Chưa cập nhật
+                    @endif
                 </p>
+                @if($class->subject)
+                    <p class="text-xs text-blue-600 font-semibold mt-1">
+                        {{ $class->subject->name }} ({{ $class->subject->credits }} TC)
+                    </p>
+                @endif
             </div>
             <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sĩ số</p>
@@ -114,10 +118,10 @@
                     <div class="bg-gradient-to-b from-white via-white to-blue-50/30 rounded-2xl border {{ $isMySubject ? 'border-blue-200' : 'border-blue-100' }} p-4 flex flex-col justify-between space-y-3 hover:shadow-md hover:shadow-blue-500/10 hover:-translate-y-0.5 transition-all duration-200 group">
                         <div>
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-mono font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">{{ $cs->subject_code }}</span>
+                                <span class="text-xs font-mono font-extrabold text-blue-600">{{ $cs->subject_code }}</span>
                                 @if($isMySubject)
-                                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                         Bạn phụ trách
                                     </span>
                                 @endif

@@ -10,6 +10,7 @@ class Subject extends Model
     use HasFactory;
 
     protected $fillable = [
+        'department_id',
         'code',
         'name',
         'credits',
@@ -21,6 +22,16 @@ class Subject extends Model
         'credits' => 'integer',
         'status' => 'boolean',
     ];
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function classes()
+    {
+        return $this->hasMany(SchoolClass::class, 'subject_id');
+    }
 
     public function questions()
     {
@@ -34,7 +45,8 @@ class Subject extends Model
 
     public function teachers()
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class, 'subject_teacher', 'subject_id', 'teacher_id')
+            ->withTimestamps();
     }
 
     public function courses()

@@ -51,10 +51,21 @@
                 <p class="text-xl font-black text-blue-600 font-mono">{{ $class->code }}</p>
             </div>
             <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Khóa học / Học kỳ</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Học kỳ / Môn học</p>
                 <p class="text-sm font-bold text-[#0a2540] leading-snug">
-                    {{ $class->course ? $class->course->name . ' (' . $class->course->semester . ')' : 'Chưa cập nhật' }}
+                    @if($class->semester)
+                        {{ $class->semester->name }} ({{ $class->semester->academic_year }})
+                    @elseif($class->course)
+                        {{ $class->course->name }} ({{ $class->course->semester }})
+                    @else
+                        Chưa cập nhật
+                    @endif
                 </p>
+                @if($class->subject)
+                    <p class="text-xs text-blue-600 font-semibold mt-1">
+                        {{ $class->subject->name }} ({{ $class->subject->credits }} TC)
+                    </p>
+                @endif
             </div>
             <div class="p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Giảng viên Chủ nhiệm</p>
@@ -81,7 +92,7 @@
                 </div>
             </div>
             @if(!$subjectTeachers->isEmpty())
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 font-mono">
+                <span class="text-xs font-semibold text-slate-500 font-mono">
                     {{ $subjectTeachers->count() }} môn học
                 </span>
             @endif
@@ -100,7 +111,7 @@
                 @foreach($subjectTeachers as $st)
                     <div class="bg-gradient-to-b from-white via-white to-blue-50/30 rounded-2xl border border-blue-100 p-4 space-y-3 flex flex-col justify-between hover:shadow-md hover:shadow-blue-500/10 hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200 group">
                         <div>
-                            <span class="text-xs font-mono text-blue-600 font-extrabold block mb-1 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 w-fit">{{ $st->subject_code }}</span>
+                            <span class="text-xs font-mono text-blue-600 font-extrabold block mb-1">{{ $st->subject_code }}</span>
                             <h4 class="font-bold text-[#0a2540] text-sm leading-snug group-hover:text-blue-700 transition-colors">{{ $st->subject_name }}</h4>
                             <p class="text-xs text-slate-500 font-medium mt-1.5 flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>

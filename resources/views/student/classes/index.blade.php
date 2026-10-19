@@ -51,9 +51,14 @@
                                 </svg>
                                 {{ $class->code }}
                             </span>
-                            @if($class->course)
-                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            @if($class->semester)
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                                    {{ $class->semester->name }}
+                                </span>
+                            @elseif($class->course)
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                     {{ $class->course->semester }}
                                 </span>
                             @endif
@@ -68,7 +73,11 @@
                                 <h2 class="text-base font-black text-[#0a2540] group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
                                     {{ $class->name }}
                                 </h2>
-                                @if($class->course)
+                                @if($class->subject)
+                                    <p class="text-xs text-blue-600 font-semibold mt-0.5">
+                                        {{ $class->subject->name }} ({{ $class->subject->credits }} TC)
+                                    </p>
+                                @elseif($class->course)
                                     <p class="text-xs text-slate-500 mt-0.5 truncate font-medium">
                                         Khóa: {{ $class->course->name }} ({{ $class->course->academic_year }})
                                     </p>
@@ -95,7 +104,7 @@
                                     <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     Sĩ số lớp
                                 </span>
-                                <span class="font-extrabold text-blue-600 font-mono bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">{{ $class->students_count }} SV</span>
+                                <span class="font-mono font-bold text-slate-700 text-xs">{{ $class->students_count }} SV</span>
                             </div>
                         </div>
                     </div>
