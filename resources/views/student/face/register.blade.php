@@ -103,6 +103,9 @@
                 <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
                 <canvas id="faceOverlay" class="absolute inset-0 w-full h-full pointer-events-none transform -scale-x-100"></canvas>
 
+                <!-- Camera Flash Effect -->
+                <div id="cameraFlash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-200 z-30"></div>
+
                 <!-- Oval Face Guide -->
                 <div id="faceGuideBox" class="absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-white/50 rounded-[50%] pointer-events-none transition-all duration-300 flex items-center justify-center overflow-hidden">
                     <!-- Laser Scanning Line -->
@@ -115,9 +118,9 @@
                     </svg>
 
                     <!-- Center prompt icon / arrow -->
-                    <div id="guideIconContainer" class="text-white/70 text-center space-y-1">
-                        <div id="guideArrow" class="hidden">
-                        </div>
+                    <div id="guideIconContainer" class="text-white/90 text-center space-y-1.5 z-20 pointer-events-none flex flex-col items-center justify-center">
+                        <div id="guideArrow"></div>
+                        <span id="guideHintText" class="text-[11px] font-bold px-2.5 py-1 bg-black/60 rounded-full backdrop-blur-xs shadow-sm">1. Nhìn thẳng camera</span>
                     </div>
                 </div>
 
@@ -283,8 +286,8 @@
     </div>
 </div>
 
-<!-- Load local face-api.min.js directly -->
-<script src="{{ asset('vendor/face-api/face-api.min.js') }}"></script>
+<!-- MediaPipe Face Mesh -->
+<script src="{{ asset('vendor/mediapipe/face_mesh.js') }}"></script>
 
 <script>
     let currentStep = 1; // 1: Frontal, 2: Left, 3: Right
@@ -294,31 +297,34 @@
         right: null
     };
 
-    let videoEl = document.getElementById('webcamVideo');
-    let overlayEl = document.getElementById('faceOverlay');
-    let canvasEl = document.getElementById('snapshotCanvas');
-    let guideBox = document.getElementById('faceGuideBox');
-    let progressCircle = document.getElementById('progressCircle');
-    let instructionText = document.getElementById('instructionText');
-    let aiBadge = document.getElementById('aiBadge');
-    let poseBadge = document.getElementById('poseBadge');
+    const videoEl = document.getElementById('webcamVideo');
+    const overlayEl = document.getElementById('faceOverlay');
+    const canvasEl = document.getElementById('snapshotCanvas');
+    const guideBox = document.getElementById('faceGuideBox');
+    const guideArrow = document.getElementById('guideArrow');
+    const guideHintText = document.getElementById('guideHintText');
+    const progressCircle = document.getElementById('progressCircle');
+    const instructionText = document.getElementById('instructionText');
+    const aiBadge = document.getElementById('aiBadge');
+    const poseBadge = document.getElementById('poseBadge');
 
-    let isModelLoaded = false;
-    let isDetecting = false;
-    let steadyCounter = 0;
+    let faceMeshInstance = null;
+    let isFaceMeshRunning = false;
+    let isProcessingFrame = false;
     let isCapturingCooldown = false;
-    const STEADY_THRESHOLD = 10; // ~1.2s of steady hold before snap
+    let steadyStartTime = null;
+    const HOLD_DURATION_MS = 750; // Giữ đúng hướng trong 750ms để tự động chụp
     const TOTAL_CIRCLE_DASH = 289;
 
-    // Audio beep using Web Audio API
-    function playBeep(freq = 600, duration = 0.15) {
+    // Web Audio chime
+    function playBeep(freq = 600, duration = 0.12) {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -327,22 +333,26 @@
         } catch(e) {}
     }
 
+    function updateProgressRing(percent) {
+        if (!progressCircle) return;
+        const offset = TOTAL_CIRCLE_DASH - (percent * TOTAL_CIRCLE_DASH);
+        progressCircle.style.strokeDashoffset = offset;
+    }
+
     async function init() {
-        console.log('[Face Register] Initializing UI and Camera...');
+        console.log('[Face Register] Initializing Camera & MediaPipe Face Mesh...');
         updateStepUI();
         await startCamera();
-        loadFaceApiModels().then(() => {
-            if (isModelLoaded) {
-                startDetectionLoop();
-            }
-        });
+        isFaceMeshRunning = true;
+        scheduleNextFrame();
+        initFaceMesh();
     }
 
     async function startCamera() {
         document.getElementById('cameraOfflineMsg').classList.add('hidden');
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('MediaDevices not supported on this browser or connection is not HTTPS/localhost');
+                throw new Error('Webcam không được hỗ trợ hoặc kết nối không an toàn (cần HTTPS/localhost).');
             }
 
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -356,20 +366,11 @@
 
             videoEl.srcObject = stream;
 
-            if (videoEl.readyState >= 1) {
+            videoEl.onloadedmetadata = () => {
+                videoEl.play().catch(e => console.log('Autoplay handled:', e));
                 overlayEl.width = videoEl.videoWidth || 640;
                 overlayEl.height = videoEl.videoHeight || 480;
-            } else {
-                await new Promise((resolve) => {
-                    const timer = setTimeout(resolve, 1500);
-                    videoEl.onloadedmetadata = () => {
-                        clearTimeout(timer);
-                        resolve();
-                    };
-                });
-                overlayEl.width = videoEl.videoWidth || 640;
-                overlayEl.height = videoEl.videoHeight || 480;
-            }
+            };
 
             try {
                 await videoEl.play();
@@ -377,6 +378,8 @@
                 console.log('Video autoplay handled:', playErr);
             }
 
+            overlayEl.width = videoEl.videoWidth || 640;
+            overlayEl.height = videoEl.videoHeight || 480;
             updateStepUI();
         } catch (err) {
             console.error('Camera error:', err);
@@ -385,257 +388,341 @@
         }
     }
 
-    async function loadFaceApiModels() {
-        const modelPath = '{{ asset("vendor/face-api/models") }}';
-        try {
-            if (typeof faceapi === 'undefined') {
-                throw new Error('faceapi library not defined');
-            }
+    async function initFaceMesh() {
+        if (typeof FaceMesh === 'undefined') {
+            console.warn('[Face Register] MediaPipe FaceMesh đang tải, thử lại sau 300ms...');
+            setTimeout(initFaceMesh, 300);
+            return;
+        }
 
-            const loadPromise = Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri(modelPath),
-                faceapi.nets.faceLandmark68Net.loadFromUri(modelPath)
-            ]);
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Model loading timed out')), 5000));
-            
-            await Promise.race([loadPromise, timeoutPromise]);
-            isModelLoaded = true;
-            aiBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
-            aiBadge.innerText = 'AI Tự động';
+        try {
+            faceMeshInstance = new FaceMesh({
+                locateFile: (file) => `{{ asset('vendor/mediapipe') }}/${file}`
+            });
+
+            faceMeshInstance.setOptions({
+                maxNumFaces: 2,
+                refineLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            faceMeshInstance.onResults(onFaceMeshResults);
+            await faceMeshInstance.initialize();
+            console.log('[Face Register] MediaPipe Face Mesh đã sẵn sàng!');
+
+            aiBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
+            aiBadge.innerText = 'AI Tự động bắt hướng';
             updateStepUI();
-        } catch (e) {
-            console.warn('face-api warning, manual capture fallback active:', e);
-            aiBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800';
-            aiBadge.innerText = 'Chụp ảnh sẵn sàng';
+        } catch (err) {
+            console.error('[Face Register] Lỗi khởi tạo Face Mesh:', err);
+            aiBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800';
+            aiBadge.innerText = 'Chụp thủ công';
             poseBadge.innerText = 'Bấm nút chụp bên dưới';
-            updateStepUI();
+        }
+    }
+
+    function scheduleNextFrame() {
+        if (isFaceMeshRunning) {
+            requestAnimationFrame(processFrame);
+        }
+    }
+
+    async function processFrame() {
+        if (!isFaceMeshRunning) return;
+
+        try {
+            if (videoEl && !videoEl.paused && !videoEl.ended && videoEl.readyState >= 2 && videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+                if (faceMeshInstance && !isProcessingFrame) {
+                    isProcessingFrame = true;
+                    faceMeshInstance.send({ image: videoEl })
+                        .catch(() => {})
+                        .finally(() => {
+                            isProcessingFrame = false;
+                        });
+                }
+            }
+        } catch (e) {
+            console.warn('[Face Register] Frame process warning:', e);
+        } finally {
+            scheduleNextFrame();
+        }
+    }
+
+    function drawFacialKeypoints(ctx, lm, width, height, isCorrect) {
+        ctx.save();
+        ctx.fillStyle = isCorrect ? 'rgba(16, 185, 129, 0.85)' : 'rgba(56, 189, 248, 0.6)';
+        ctx.shadowColor = isCorrect ? '#10b981' : '#38bdf8';
+        ctx.shadowBlur = 4;
+
+        // Key landmarks: nose tip, eyes, mouth corners, chin
+        const keyIndices = [1, 33, 263, 61, 291, 199, 10, 152];
+        for (const idx of keyIndices) {
+            if (lm[idx]) {
+                const x = lm[idx].x * width;
+                const y = lm[idx].y * height;
+                ctx.beginPath();
+                ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+
+    function onFaceMeshResults(results) {
+        if (overlayEl.width !== videoEl.videoWidth || overlayEl.height !== videoEl.videoHeight) {
+            overlayEl.width = videoEl.videoWidth || 640;
+            overlayEl.height = videoEl.videoHeight || 480;
+        }
+        const ctx = overlayEl.getContext('2d');
+        ctx.clearRect(0, 0, overlayEl.width, overlayEl.height);
+
+        // 1. Đã hoàn tất cả 3 góc
+        if (capturedData.frontal && capturedData.left && capturedData.right) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-solid border-emerald-500 rounded-[50%] shadow-[0_0_25px_rgba(16,185,129,0.7)] pointer-events-none transition-all duration-300';
+            poseBadge.className = 'text-emerald-600 font-bold';
+            poseBadge.innerText = 'Đã hoàn tất đủ 3 góc!';
+            updateProgressRing(1.0);
+            return;
+        }
+
+        // 2. Cooldown nghỉ giữa các góc chụp
+        if (isCapturingCooldown) {
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        // 3. Góc hiện tại đã có ảnh
+        const currentSlotKey = currentStep === 1 ? 'frontal' : (currentStep === 2 ? 'left' : 'right');
+        if (capturedData[currentSlotKey]) {
+            steadyStartTime = null;
+            updateProgressRing(0);
+            poseBadge.className = 'text-emerald-600 font-bold';
+            poseBadge.innerText = 'Đã chụp góc này';
+            return;
+        }
+
+        const faceCount = results.multiFaceLandmarks ? results.multiFaceLandmarks.length : 0;
+        if (faceCount === 0) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-white/40 rounded-[50%] pointer-events-none transition-all duration-300';
+            poseBadge.className = 'text-slate-400 font-medium';
+            poseBadge.innerText = 'Chưa phát hiện khuôn mặt';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        if (faceCount > 1) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-rose-500 rounded-[50%] pointer-events-none transition-all duration-300';
+            poseBadge.className = 'text-rose-600 font-bold';
+            poseBadge.innerText = 'Phát hiện > 1 người trước camera';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        const lm = results.multiFaceLandmarks[0];
+
+        // Bounding box & Center check
+        let minX = 1.0, maxX = 0.0, minY = 1.0, maxY = 0.0;
+        for (let i = 0; i < lm.length; i++) {
+            const p = lm[i];
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+        const faceHeightRatio = maxY - minY;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        if (faceHeightRatio < 0.20) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-600 font-bold';
+            poseBadge.innerText = 'Đưa mặt lại gần camera hơn';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+        if (faceHeightRatio > 0.85) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-600 font-bold';
+            poseBadge.innerText = 'Lùi mặt xa camera một chút';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        if (centerX < 0.18 || centerX > 0.82 || centerY < 0.15 || centerY > 0.85) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-600 font-bold';
+            poseBadge.innerText = 'Căn mặt vào giữa khung oval';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        // 3D Head Pose calculation:
+        // Landmark 1: Đầu mũi (Nose tip)
+        // Landmark 33: Góc ngoài mắt trái (Left eye outer corner)
+        // Landmark 263: Góc ngoài mắt phải (Right eye outer corner)
+        const eyeMidX = (lm[33].x + lm[263].x) / 2;
+        const eyeDist = Math.hypot(lm[263].x - lm[33].x, lm[263].y - lm[33].y) || 0.001;
+        const rawYaw = (lm[1].x - eyeMidX) / eyeDist;
+
+        const noseY = lm[1].y;
+        const foreheadY = lm[10].y;
+        const chinY = lm[152].y;
+        const upperDist = Math.max(0.001, Math.abs(noseY - foreheadY));
+        const lowerDist = Math.max(0.001, Math.abs(chinY - noseY));
+        const pitchRatio = upperDist / lowerDist;
+
+        if (pitchRatio > 1.85) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-600 font-bold';
+            poseBadge.innerText = 'Ngẩng đầu lên ngang tầm camera';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+        if (pitchRatio < 0.50) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-600 font-bold';
+            poseBadge.innerText = 'Hạ cằm xuống ngang tầm camera';
+            steadyStartTime = null;
+            updateProgressRing(0);
+            return;
+        }
+
+        // Head pose determination:
+        // Video có transform: -scale-x-100 (gương selfie)
+        // Khi người dùng nghiêng sang TRÁI (hướng vai trái của bạn):
+        // Mũi di chuyển sang phía X lớn hơn trong raw frame -> rawYaw > 0.
+        // Khi người dùng nghiêng sang PHẢI (hướng vai phải của bạn):
+        // Mũi di chuyển sang phía X nhỏ hơn trong raw frame -> rawYaw < 0.
+        let detectedPose = 'transition';
+        let poseText = 'Đang chỉnh góc';
+
+        if (rawYaw >= 0.11) {
+            detectedPose = 'left';
+            poseText = 'Đang nghiêng TRÁI';
+        } else if (rawYaw <= -0.11) {
+            detectedPose = 'right';
+            poseText = 'Đang nghiêng PHẢI';
+        } else if (Math.abs(rawYaw) <= 0.08) {
+            detectedPose = 'frontal';
+            poseText = 'Đang nhìn THẲNG';
+        }
+
+        let isCorrectAngle = false;
+        let targetName = '';
+
+        if (currentStep === 1) {
+            targetName = 'Nhìn thẳng';
+            if (detectedPose === 'frontal') isCorrectAngle = true;
+        } else if (currentStep === 2) {
+            targetName = 'Nghiêng trái';
+            if (detectedPose === 'left') isCorrectAngle = true;
+        } else if (currentStep === 3) {
+            targetName = 'Nghiêng phải';
+            if (detectedPose === 'right') isCorrectAngle = true;
+        }
+
+        drawFacialKeypoints(ctx, lm, overlayEl.width, overlayEl.height, isCorrectAngle);
+
+        if (isCorrectAngle) {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-solid border-emerald-400 rounded-[50%] shadow-[0_0_24px_rgba(16,185,129,0.7)] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-emerald-600 font-bold';
+            poseBadge.innerText = `✓ Đúng góc: ${targetName} (Giữ yên...)`;
+
+            const now = Date.now();
+            if (steadyStartTime === null) {
+                steadyStartTime = now;
+            }
+            const elapsed = now - steadyStartTime;
+            const progress = Math.min(1.0, elapsed / HOLD_DURATION_MS);
+            updateProgressRing(progress);
+
+            if (progress >= 1.0) {
+                captureCurrentAngle();
+                steadyStartTime = null;
+                updateProgressRing(0);
+            }
+        } else {
+            guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
+            poseBadge.className = 'text-amber-700 font-semibold';
+            poseBadge.innerText = `${poseText} • Yêu cầu: ${targetName}`;
+            steadyStartTime = null;
+            updateProgressRing(0);
         }
     }
 
     function updateStepUI() {
         const steps = [
-            { id: 1, name: 'Nhìn thẳng', desc: 'Góc 1/3: Giữ khuôn mặt ở giữa khung oval và nhìn thẳng camera' },
-            { id: 2, name: 'Nghiêng trái', desc: 'Góc 2/3: Nghiêng nhẹ mặt sang bên TRÁI khoảng 15° - 20°' },
-            { id: 3, name: 'Nghiêng phải', desc: 'Góc 3/3: Nghiêng nhẹ mặt sang bên PHẢI khoảng 15° - 20°' },
+            { id: 1, name: 'Nhìn thẳng', desc: 'Góc 1/3: Giữ khuôn mặt ở giữa khung oval và nhìn thẳng vào camera', hint: '1. Nhìn thẳng camera' },
+            { id: 2, name: 'Nghiêng trái', desc: 'Góc 2/3: Nghiêng nhẹ mặt sang bên TRÁI (khoảng 15° - 20°)', hint: '2. Nghiêng sang TRÁI (←)' },
+            { id: 3, name: 'Nghiêng phải', desc: 'Góc 3/3: Nghiêng nhẹ mặt sang bên PHẢI (khoảng 15° - 20°)', hint: '3. Nghiêng sang PHẢI (→)' },
         ];
 
         steps.forEach(s => {
             const el = document.getElementById(`stepIndicator${s.id}`);
             const badge = el.querySelector('div:first-child');
             if (s.id === currentStep) {
-                el.className = 'flex items-center gap-3 p-2.5 rounded-xl bg-indigo-50 border-2 border-indigo-500 shadow-sm';
-                badge.className = 'w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0';
+                el.className = 'flex items-center gap-3 p-3 rounded-xl bg-blue-50 border-2 border-blue-600 shadow-sm transition-all';
+                badge.className = 'w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0';
             } else if (capturedData[s.id === 1 ? 'frontal' : (s.id === 2 ? 'left' : 'right')]) {
-                el.className = 'flex items-center gap-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200';
-                badge.className = 'w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0';
+                el.className = 'flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-300 transition-all';
+                badge.className = 'w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0';
             } else {
-                el.className = 'flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 border border-gray-100 opacity-60';
-                badge.className = 'w-8 h-8 rounded-lg bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm shrink-0';
+                el.className = 'flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 transition-all opacity-60';
+                badge.className = 'w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0';
             }
         });
 
         if (capturedData.frontal && capturedData.left && capturedData.right) {
-            instructionText.innerText = 'Đã chụp đủ 3 góc khuôn mặt. Bấm nút bên dưới để lưu hồ sơ.';
+            instructionText.innerText = '✓ Đã chụp đủ 3 góc khuôn mặt. Bấm nút bên dưới để hoàn tất lưu hồ sơ.';
+            guideArrow.innerHTML = `<svg class="w-8 h-8 text-emerald-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+            guideHintText.innerText = 'Đã hoàn thành 3 góc';
         } else {
-            instructionText.innerText = steps[currentStep - 1].desc;
+            const cur = steps[currentStep - 1];
+            instructionText.innerText = cur.desc;
+            guideHintText.innerText = cur.hint;
+
+            if (currentStep === 1) {
+                guideArrow.innerHTML = `<svg class="w-7 h-7 text-white/90 mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+            } else if (currentStep === 2) {
+                guideArrow.innerHTML = `<svg class="w-8 h-8 text-emerald-300 mx-auto animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>`;
+            } else if (currentStep === 3) {
+                guideArrow.innerHTML = `<svg class="w-8 h-8 text-emerald-300 mx-auto animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`;
+            }
         }
 
-        steadyCounter = 0;
+        steadyStartTime = null;
         updateProgressRing(0);
-    }
-
-    function selectStep(stepNum) {
-        currentStep = stepNum;
-        
-        // Reset this slot to allow single re-capture
-        if (stepNum === 1) capturedData.frontal = null;
-        if (stepNum === 2) capturedData.left = null;
-        if (stepNum === 3) capturedData.right = null;
-
-        const key = stepNum === 1 ? 'Frontal' : (stepNum === 2 ? 'Left' : 'Right');
-        document.getElementById('statusBadge' + key).className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 mt-1';
-        document.getElementById('statusBadge' + key).innerText = 'Chưa chụp';
-
-        isCapturingCooldown = false;
-        steadyCounter = 0;
-        updateProgressRing(0);
-        updateStepUI();
-        checkCompletion();
-    }
-
-    function updateProgressRing(percent) {
-        if (!progressCircle) return;
-        const offset = TOTAL_CIRCLE_DASH - (percent * TOTAL_CIRCLE_DASH);
-        progressCircle.style.strokeDashoffset = offset;
-    }
-
-    async function startDetectionLoop() {
-        if (isDetecting) return;
-        isDetecting = true;
-
-        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.35 });
-
-        setInterval(async () => {
-            if (!isModelLoaded || videoEl.paused || videoEl.ended) return;
-
-            // 1. If all 3 angles are already captured, stop auto-capturing completely!
-            if (capturedData.frontal && capturedData.left && capturedData.right) {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-solid border-emerald-500 rounded-[50%] shadow-[0_0_20px_rgba(16,185,129,0.7)] pointer-events-none';
-                poseBadge.className = 'text-emerald-600 font-bold';
-                poseBadge.innerText = 'Đã hoàn tất 3 góc';
-                steadyCounter = 0;
-                updateProgressRing(1.0);
-                return;
-            }
-
-            // 2. If in cooldown between angles, wait
-            if (isCapturingCooldown) {
-                steadyCounter = 0;
-                updateProgressRing(0);
-                return;
-            }
-
-            // 3. If the current step already has a photo, do NOT auto-capture again!
-            const currentSlotKey = currentStep === 1 ? 'frontal' : (currentStep === 2 ? 'left' : 'right');
-            if (capturedData[currentSlotKey]) {
-                steadyCounter = 0;
-                updateProgressRing(0);
-                poseBadge.className = 'text-emerald-600 font-bold';
-                poseBadge.innerText = 'Đã chụp góc này';
-                return;
-            }
-
-            const detection = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks();
-            const ctx = overlayEl.getContext('2d');
-            ctx.clearRect(0, 0, overlayEl.width, overlayEl.height);
-
-            if (!detection) {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-white/40 rounded-[50%] pointer-events-none transition-all duration-300';
-                poseBadge.className = 'text-gray-500 font-medium';
-                poseBadge.innerText = 'Không phát hiện khuôn mặt';
-                steadyCounter = 0;
-                updateProgressRing(0);
-                return;
-            }
-
-            // Check Face Centering and Close-up (Cận cảnh & Canh ngay giữa)
-            const box = detection.detection.box;
-            const videoWidth = videoEl.videoWidth || 640;
-            const videoHeight = videoEl.videoHeight || 480;
-
-            const faceCenterX = box.x + box.width / 2;
-            const faceCenterY = box.y + box.height / 2;
-            const isCenteredX = Math.abs(faceCenterX - videoWidth / 2) < (videoWidth * 0.18);
-            const isCenteredY = Math.abs(faceCenterY - videoHeight / 2) < (videoHeight * 0.20);
-            const isCentered = isCenteredX && isCenteredY;
-
-            const faceHeightRatio = box.height / videoHeight;
-            const isCloseUp = faceHeightRatio >= 0.33; // Face must take at least 33% of frame height
-
-            if (!isCloseUp) {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
-                poseBadge.className = 'text-amber-600 font-bold';
-                poseBadge.innerText = 'Đưa mặt lại gần hơn (cận cảnh)';
-                steadyCounter = 0;
-                updateProgressRing(0);
-                return;
-            }
-
-            if (!isCentered) {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
-                poseBadge.className = 'text-amber-600 font-bold';
-                poseBadge.innerText = 'Căn giữa khuôn mặt';
-                steadyCounter = 0;
-                updateProgressRing(0);
-                return;
-            }
-
-            // Estimate horizontal yaw from facial landmarks (supports with or without glasses)
-            const landmarks = detection.landmarks;
-            const nose = landmarks.getNose()[3]; // nose tip (point 30)
-            const leftEye = landmarks.getLeftEye()[0];  // image-left eye corner (smaller X)
-            const rightEye = landmarks.getRightEye()[3]; // image-right eye corner (larger X)
-
-            const eyeMidX = (leftEye.x + rightEye.x) / 2;
-            const eyeDist = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y) || 1;
-            
-            // Nose shift relative to eye midpoint:
-            // Positive: Nose moved towards higher X (User's LEFT)
-            // Negative: Nose moved towards lower X (User's RIGHT)
-            const noseShift = (nose.x - eyeMidX) / eyeDist;
-
-            // Determine detected head pose
-            let detectedPose = 'transition';
-            let poseDesc = 'Đang chỉnh góc';
-
-            if (noseShift >= 0.11) {
-                detectedPose = 'left';
-                poseDesc = 'Nghiêng trái';
-            } else if (noseShift <= -0.11) {
-                detectedPose = 'right';
-                poseDesc = 'Nghiêng phải';
-            } else if (Math.abs(noseShift) <= 0.08) {
-                detectedPose = 'straight';
-                poseDesc = 'Nhìn thẳng';
-            }
-
-            // Check if current detected pose matches requested step
-            let isCorrectAngle = false;
-            let requiredAngleName = '';
-
-            if (currentStep === 1) { // Frontal
-                requiredAngleName = 'Nhìn thẳng';
-                if (detectedPose === 'straight') isCorrectAngle = true;
-            } else if (currentStep === 2) { // Left only
-                requiredAngleName = 'Nghiêng trái';
-                if (detectedPose === 'left') isCorrectAngle = true;
-            } else if (currentStep === 3) { // Right only
-                requiredAngleName = 'Nghiêng phải';
-                if (detectedPose === 'right') isCorrectAngle = true;
-            }
-
-            if (isCorrectAngle) {
-                poseBadge.className = 'text-emerald-600 font-bold';
-                poseBadge.innerText = `${poseDesc} (Giữ yên...)`;
-            } else {
-                poseBadge.className = 'text-amber-600 font-semibold';
-                poseBadge.innerText = `Đang ${poseDesc} (Cần ${requiredAngleName})`;
-            }
-
-            if (isCorrectAngle) {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-solid border-emerald-400 rounded-[50%] shadow-[0_0_20px_rgba(16,185,129,0.6)] pointer-events-none transition-all duration-200';
-                steadyCounter++;
-                const progress = Math.min(1.0, steadyCounter / STEADY_THRESHOLD);
-                updateProgressRing(progress);
-
-                if (steadyCounter >= STEADY_THRESHOLD) {
-                    // Auto-capture steady angle once!
-                    captureCurrentAngle();
-                    steadyCounter = 0;
-                    updateProgressRing(0);
-                }
-            } else {
-                guideBox.className = 'absolute inset-0 m-auto w-56 h-72 border-2 border-dashed border-amber-400 rounded-[50%] pointer-events-none transition-all duration-200';
-                steadyCounter = Math.max(0, steadyCounter - 1);
-                updateProgressRing(steadyCounter / STEADY_THRESHOLD);
-            }
-
-        }, 120);
     }
 
     function captureCurrentAngle() {
         canvasEl.width = videoEl.videoWidth || 640;
         canvasEl.height = videoEl.videoHeight || 480;
         const ctx = canvasEl.getContext('2d');
-        
         ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
         const dataUrl = canvasEl.toDataURL('image/jpeg', 0.92);
 
-        playBeep(880, 0.15);
+        playBeep(880, 0.12);
 
-        // Enter transition cooldown so it never immediately snaps the next angle
+        const flashEl = document.getElementById('cameraFlash');
+        if (flashEl) {
+            flashEl.classList.remove('opacity-0');
+            flashEl.classList.add('opacity-80');
+            setTimeout(() => {
+                flashEl.classList.remove('opacity-80');
+                flashEl.classList.add('opacity-0');
+            }, 180);
+        }
+
         isCapturingCooldown = true;
-        steadyCounter = 0;
+        steadyStartTime = null;
         updateProgressRing(0);
 
         if (currentStep === 1) {
@@ -644,44 +731,65 @@
             document.getElementById('previewFrontal').classList.remove('hidden');
             document.getElementById('emptyFrontal').classList.add('hidden');
             document.getElementById('statusBadgeFrontal').className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mt-1';
-            document.getElementById('statusBadgeFrontal').innerText = 'Đã chụp';
-            
-            // Move to Step 2
+            document.getElementById('statusBadgeFrontal').innerText = '✓ Đã chụp';
+
             currentStep = 2;
             updateStepUI();
+            instructionText.innerText = '✓ Đã chụp góc nhìn thẳng! Chuẩn bị góc 2: Hãy nghiêng nhẹ mặt sang bên TRÁI...';
         } else if (currentStep === 2) {
             capturedData.left = dataUrl;
             document.getElementById('previewLeft').src = dataUrl;
             document.getElementById('previewLeft').classList.remove('hidden');
             document.getElementById('emptyLeft').classList.add('hidden');
             document.getElementById('statusBadgeLeft').className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mt-1';
-            document.getElementById('statusBadgeLeft').innerText = 'Đã chụp';
+            document.getElementById('statusBadgeLeft').innerText = '✓ Đã chụp';
 
-            // Move to Step 3
             currentStep = 3;
             updateStepUI();
+            instructionText.innerText = '✓ Đã chụp góc nghiêng trái! Chuẩn bị góc 3: Hãy nghiêng nhẹ mặt sang bên PHẢI...';
         } else if (currentStep === 3) {
             capturedData.right = dataUrl;
             document.getElementById('previewRight').src = dataUrl;
             document.getElementById('previewRight').classList.remove('hidden');
             document.getElementById('emptyRight').classList.add('hidden');
             document.getElementById('statusBadgeRight').className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mt-1';
-            document.getElementById('statusBadgeRight').innerText = 'Đã chụp';
+            document.getElementById('statusBadgeRight').innerText = '✓ Đã chụp';
 
             updateStepUI();
-            instructionText.innerText = 'Đã chụp đủ 3 góc. Bấm nút bên dưới để lưu hồ sơ.';
+            instructionText.innerText = '✓ Tuyệt vời! Đã chụp đủ 3 góc khuôn mặt. Bấm nút bên dưới để hoàn tất lưu hồ sơ.';
+            setTimeout(() => playBeep(1046, 0.2), 150);
         }
 
         checkCompletion();
 
-        // 1.8 second cooldown before allowing the next angle to auto-capture
         setTimeout(() => {
             isCapturingCooldown = false;
-        }, 1800);
+            updateStepUI();
+        }, 1200);
     }
 
     function manualCaptureAngle() {
         captureCurrentAngle();
+    }
+
+    function selectStep(stepNum) {
+        currentStep = stepNum;
+        
+        if (stepNum === 1) capturedData.frontal = null;
+        if (stepNum === 2) capturedData.left = null;
+        if (stepNum === 3) capturedData.right = null;
+
+        const key = stepNum === 1 ? 'Frontal' : (stepNum === 2 ? 'Left' : 'Right');
+        document.getElementById('preview' + key).classList.add('hidden');
+        document.getElementById('empty' + key).classList.remove('hidden');
+        document.getElementById('statusBadge' + key).className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 mt-1';
+        document.getElementById('statusBadge' + key).innerText = 'Chưa chụp';
+
+        isCapturingCooldown = false;
+        steadyStartTime = null;
+        updateProgressRing(0);
+        updateStepUI();
+        checkCompletion();
     }
 
     function checkCompletion() {
@@ -690,8 +798,11 @@
         submitBtn.disabled = !isComplete;
         if (isComplete) {
             submitBtn.classList.remove('opacity-40', 'pointer-events-none');
-            submitBtn.classList.add('animate-pulse');
-            setTimeout(() => submitBtn.classList.remove('animate-pulse'), 1500);
+            submitBtn.classList.add('animate-pulse', 'ring-4', 'ring-blue-400/40');
+            setTimeout(() => submitBtn.classList.remove('animate-pulse'), 2000);
+        } else {
+            submitBtn.classList.add('opacity-40', 'pointer-events-none');
+            submitBtn.classList.remove('ring-4', 'ring-blue-400/40');
         }
     }
 

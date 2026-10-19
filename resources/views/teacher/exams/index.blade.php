@@ -129,6 +129,13 @@
                     @endif
                 </form>
                 
+                <a href="{{ route('teacher.assignments.create') }}" class="inline-flex items-center justify-center px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold rounded-2xl border border-indigo-200 shadow-2xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shrink-0">
+                    <svg class="w-4 h-4 mr-1.5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                    Giao đề cho lớp
+                </a>
+
                 <a href="{{ route('teacher.exams.create') }}" class="inline-flex items-center justify-center px-4.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-2xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shrink-0">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
@@ -175,21 +182,21 @@
                                     @if($exam->enable_proctor_camera ?? true)
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs" title="Camera gian lận thời gian thực: ĐANG BẬT (Chu kỳ {{ $exam->proctor_interval_seconds ?? 120 }}s)">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            📷 Camera AI ({{ $exam->proctor_interval_seconds ?? 120 }}s)
+                                            Camera AI ({{ $exam->proctor_interval_seconds ?? 120 }}s)
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500" title="Camera gian lận thời gian thực: ĐÃ TẮT">
-                                            📷 Camera: Tắt
+                                            Camera: Tắt
                                         </span>
                                     @endif
 
                                     @if($exam->require_face_verification ?? true)
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs" title="Nhận diện khuôn mặt vào thi: BẮT BUỘC">
-                                            👤 Face ID vào thi
+                                            Face ID vào thi
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500" title="Nhận diện khuôn mặt vào thi: KHÔNG YÊU CẦU">
-                                            👤 Face ID: Tắt
+                                            Face ID: Tắt
                                         </span>
                                     @endif
                                 </div>
@@ -222,6 +229,9 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route('teacher.assignments.create', ['exam_id' => $exam->id]) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors" title="Giao đề thi cho lớp">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                                    </a>
                                     <a href="{{ route('teacher.exams.results', $exam) }}" class="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors" title="Xem kết quả">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                                     </a>
@@ -271,7 +281,7 @@
                         Bạn có chắc chắn muốn xóa đề thi <span id="deleteExamTitle" class="font-bold text-gray-800"></span> (<span id="deleteExamCode" class="font-mono font-semibold text-blue-600"></span>)?
                     </p>
                     <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100 mt-3 text-left">
-                        ⚠️ Cảnh báo: Thao tác này sẽ xóa toàn bộ câu hỏi trong đề thi, lượt làm bài và kết quả thi của sinh viên thuộc đề này. Hành động này không thể hoàn tác!
+                        Cảnh báo: Thao tác này sẽ xóa toàn bộ câu hỏi trong đề thi, lượt làm bài và kết quả thi của sinh viên thuộc đề này. Hành động này không thể hoàn tác!
                     </p>
                 </div>
                 <form id="deleteExamForm" method="POST" class="pt-3 flex gap-3">

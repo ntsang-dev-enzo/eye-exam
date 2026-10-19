@@ -86,8 +86,9 @@ class DashboardController extends Controller
 
         // 3. Stats Calculation
         $submittedAttempts = $attempts->where('status', 'submitted');
+        $viewableAttempts = $submittedAttempts->filter(fn($a) => $a->exam && ($a->exam->allow_view_score ?? true));
         $totalSubmitted = $submittedAttempts->count();
-        $avgScore = $totalSubmitted > 0 ? round($submittedAttempts->avg('score_value'), 1) : null;
+        $avgScore = $viewableAttempts->count() > 0 ? round($viewableAttempts->avg('score_value'), 1) : null;
         $inProgressCount = $attempts->where('status', 'in_progress')->count();
         $totalAssigned = $assignedExams->count();
 

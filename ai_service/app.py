@@ -45,7 +45,6 @@ import torch
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from insightface.app import FaceAnalysis
-from ultralytics import YOLO
 
 app = Flask(__name__)
 CORS(app)
@@ -64,17 +63,16 @@ if USE_CUDA:
     print("============================================================")
     providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
     ctx_id = 0
-    YOLO_DEVICE = 'cuda:0'
 else:
     GPU_NAME = "CPU"
     TOTAL_VRAM_GB = 0
     print("==> [Notice] No NVIDIA GPU detected with CUDA. Falling back to CPU.")
     providers = ['CPUExecutionProvider']
     ctx_id = -1
-    YOLO_DEVICE = 'cpu'
 
 # -------------------------------------------------------------
-# Initialize Models on GPU
+# Initialize InsightFace Model (Backend Lightweight)
+# YOLOv8 object detection is offloaded to client browser (WebGL/WASM)
 # -------------------------------------------------------------
 print("==> Loading InsightFace (ArcFace)...")
 face_app = FaceAnalysis(name='buffalo_sc', providers=providers)
@@ -82,21 +80,9 @@ face_app.prepare(ctx_id=ctx_id, det_size=(320, 320))
 active_face_providers = [getattr(m, 'session', None).get_providers()[0] for m in face_app.models.values() if hasattr(m, 'session')]
 face_ep = active_face_providers[0] if active_face_providers else ('CUDAExecutionProvider' if USE_CUDA else 'CPUExecutionProvider')
 print(f"==> InsightFace (ArcFace) loaded successfully on {face_ep}!")
+print("==> Object Detection (YOLOv8) is offloaded to client-side browser to minimize server load.")
 
-# Move yolov8n.pt to script directory or current working dir
-yolo_path = os.path.join(os.path.dirname(__file__), '..', 'yolov8n.pt')
-if not os.path.exists(yolo_path):
-    yolo_path = 'yolov8n.pt'
-
-print(f"==> Loading YOLOv8 model from {yolo_path}...")
-yolo_model = YOLO(yolo_path)
-if USE_CUDA:
-    yolo_model.to('cuda')
-    print(f"==> YOLOv8 moved to NVIDIA GPU ({yolo_model.device}) successfully!")
-else:
-    print("==> YOLOv8 loaded successfully on CPU!")
-
-# Target COCO Classes for anti-cheat
+# Target COCO Classes for anti-cheat reference
 # 0: person, 67: cell phone, 73: book, 63: laptop
 CHEAT_CLASSES = {
     0: 'person',
@@ -146,8 +132,8 @@ def health():
                 'provider': face_ep
             },
             'object_detection': {
-                'name': 'YOLOv8n',
-                'device': str(yolo_model.device)
+                'name': 'Client-side YOLOv8n (In-Browser WebGL/WASM)',
+                'mode': 'offloaded_to_client'
             }
         }
     })
@@ -240,47 +226,18 @@ def verify_face():
     h, w = img_bgr.shape[:2]
 
     # -------------------------------------------------------------
-    # 0. YOLOv8 Object & Person Detection ("vừa YOLO phân tích")
+    # 0. Client Detections Check & Face Detection
     # -------------------------------------------------------------
-    yolo_results = yolo_model(img_bgr, conf=0.35, device=YOLO_DEVICE, verbose=False)[0]
-    person_count = 0
-    phone_detected = False
-    yolo_detections = []
-
-    for box in yolo_results.boxes:
-        cls_id = int(box.cls[0])
-        conf = float(box.conf[0])
-        bx1, by1, bx2, by2 = [int(v) for v in box.xyxy[0].tolist()]
-
-        if cls_id in CHEAT_CLASSES:
-            label = CHEAT_CLASSES[cls_id]
-            yolo_detections.append({
-                'label': label,
-                'confidence': round(conf * 100, 1),
-                'box': [bx1, by1, bx2, by2]
+    client_detections = data.get('detections', [])
+    for det in client_detections:
+        if det.get('label') == 'cell phone':
+            return jsonify({
+                'success': False,
+                'matched': False,
+                'similarity': 0.0,
+                'message': 'Phát hiện điện thoại di động trước camera! Vui lòng cất điện thoại trước khi xác thực.',
+                'detections': client_detections
             })
-            if label == 'person':
-                person_count += 1
-            elif label == 'cell phone':
-                phone_detected = True
-
-    if phone_detected:
-        return jsonify({
-            'success': False,
-            'matched': False,
-            'similarity': 0.0,
-            'message': 'Phát hiện điện thoại di động trước camera! Vui lòng cất điện thoại trước khi xác thực.',
-            'detections': yolo_detections
-        })
-
-    if person_count > 1:
-        return jsonify({
-            'success': False,
-            'matched': False,
-            'similarity': 0.0,
-            'message': f'Phát hiện {person_count} người trong khung hình camera. Yêu cầu chỉ 1 thí sinh duy nhất trước màn hình!',
-            'detections': yolo_detections
-        })
 
     faces = face_app.get(img_bgr)
     if not faces:
@@ -289,7 +246,16 @@ def verify_face():
             'matched': False,
             'similarity': 0.0,
             'message': 'Không nhận diện được khuôn mặt trong khung hình. Vui lòng ngồi trước camera và đủ ánh sáng.',
-            'detections': yolo_detections
+            'detections': client_detections
+        })
+
+    if len(faces) > 1:
+        return jsonify({
+            'success': False,
+            'matched': False,
+            'similarity': 0.0,
+            'message': f'Phát hiện {len(faces)} người trong khung hình camera. Yêu cầu chỉ 1 thí sinh duy nhất trước màn hình!',
+            'detections': client_detections
         })
 
     # Pick primary face (largest area)
@@ -497,98 +463,89 @@ def analyze_proctor_snapshot():
     h, w = img_bgr.shape[:2]
 
     # -------------------------------------------------------------
-    # 1. YOLOv8 Object Detection
+    # 1. Process Client Detections (Offloaded to browser YOLOv8 / MediaPipe)
     # -------------------------------------------------------------
-    results = yolo_model(img_bgr, conf=0.35, device=YOLO_DEVICE, verbose=False)[0]
-    detections = []
-    person_boxes = []
-    phone_boxes = []
-    book_boxes = []
-    laptop_boxes = []
+    detections = data.get('detections', [])
+    client_violations = data.get('violations', [])
+    client_person_count = data.get('face_count') if data.get('face_count') is not None else data.get('person_count')
 
-    for box in results.boxes:
-        cls_id = int(box.cls[0])
-        conf = float(box.conf[0])
-        x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+    violations = list(client_violations) if isinstance(client_violations, list) else []
+    status = 'violation' if any(v.get('severity') in ['high', 'critical'] for v in violations) else ('warning' if violations else 'normal')
 
-        if cls_id in CHEAT_CLASSES:
-            label = CHEAT_CLASSES[cls_id]
-            det_item = {
-                'label': label,
-                'coco_id': cls_id,
-                'dataset': 'COCO',
-                'confidence': round(conf * 100, 1),
-                'box': [x1, y1, x2, y2],
-                'normalized_box': [round(x1 / w, 4), round(y1 / h, 4), round(x2 / w, 4), round(y2 / h, 4)]
-            }
-            detections.append(det_item)
+    phone_boxes = [d for d in detections if d.get('label') == 'cell phone']
+    book_boxes = [d for d in detections if d.get('label') == 'book']
+    laptop_boxes = [d for d in detections if d.get('label') == 'laptop']
+    person_boxes = [d for d in detections if d.get('label') == 'person']
 
-            if label == 'person':
-                person_boxes.append(det_item)
-            elif label == 'cell phone':
-                phone_boxes.append(det_item)
-            elif label == 'book':
-                book_boxes.append(det_item)
-            elif label == 'laptop':
-                laptop_boxes.append(det_item)
+    if phone_boxes:
+        has_phone_v = any(v.get('type') == 'phone_detected' for v in violations)
+        if not has_phone_v:
+            violations.append({
+                'type': 'phone_detected',
+                'severity': 'high',
+                'message': 'Phát hiện điện thoại di động trong khung hình camera'
+            })
+            status = 'violation'
 
-    person_count = len(person_boxes)
-    violations = []
-    status = 'normal'
+    if book_boxes:
+        has_book_v = any(v.get('type') == 'suspicious_object' for v in violations)
+        if not has_book_v:
+            violations.append({
+                'type': 'suspicious_object',
+                'severity': 'medium',
+                'message': 'Phát hiện sách hoặc tài liệu trong khung hình (COCO: book)'
+            })
+            if status != 'violation':
+                status = 'warning'
 
-    # Check YOLO violations (COCO Dataset)
-    if len(phone_boxes) > 0:
-        phone_conf = phone_boxes[0]['confidence']
-        violations.append({
-            'type': 'phone_detected',
-            'severity': 'high',
-            'message': f'Phát hiện điện thoại di động trong khung hình (Độ tin cậy: {phone_conf}%)'
-        })
-        status = 'violation'
-
-    if person_count == 0:
-        violations.append({
-            'type': 'face_absent',
-            'severity': 'high',
-            'message': 'Không phát hiện thí sinh trước màn hình (Vắng mặt)'
-        })
-        status = 'violation'
-    elif person_count > 1:
-        violations.append({
-            'type': 'multiple_persons',
-            'severity': 'high',
-            'message': f'Phát hiện {person_count} người trong khung hình camera (Có người trợ giúp)'
-        })
-        status = 'violation'
-
-    if len(book_boxes) > 0:
-        violations.append({
-            'type': 'suspicious_object',
-            'severity': 'medium',
-            'message': 'Phát hiện sách hoặc tài liệu trong khung hình (COCO: book)'
-        })
-        if status != 'violation':
-            status = 'warning'
-
-    if len(laptop_boxes) > 0:
-        violations.append({
-            'type': 'suspicious_device',
-            'severity': 'medium',
-            'message': 'Phát hiện thiết bị máy tính thứ hai trong khung hình (COCO: laptop)'
-        })
-        if status != 'violation':
-            status = 'warning'
+    if laptop_boxes:
+        has_laptop_v = any(v.get('type') == 'suspicious_device' for v in violations)
+        if not has_laptop_v:
+            violations.append({
+                'type': 'suspicious_device',
+                'severity': 'medium',
+                'message': 'Phát hiện thiết bị máy tính thứ hai trong khung hình (COCO: laptop)'
+            })
+            if status != 'violation':
+                status = 'warning'
 
     # -------------------------------------------------------------
     # 2. InsightFace: Identity Verification & Head Pose / Gaze Check
     # -------------------------------------------------------------
+    faces = face_app.get(img_bgr)
+    face_count = len(faces)
+
+    if client_person_count is not None:
+        person_count = int(client_person_count)
+    elif len(person_boxes) > 0:
+        person_count = len(person_boxes)
+    else:
+        person_count = face_count
+
+    if person_count == 0:
+        has_absent = any(v.get('type') == 'face_absent' for v in violations)
+        if not has_absent:
+            violations.append({
+                'type': 'face_absent',
+                'severity': 'high',
+                'message': 'Không phát hiện thí sinh trước màn hình (Vắng mặt)'
+            })
+            status = 'violation'
+    elif person_count > 1:
+        has_multi = any(v.get('type') == 'multiple_persons' for v in violations)
+        if not has_multi:
+            violations.append({
+                'type': 'multiple_persons',
+                'severity': 'high',
+                'message': f'Phát hiện {person_count} người trong khung hình camera (Có người trợ giúp)'
+            })
+            status = 'violation'
+
     face_similarity = None
     face_matched = None
     gaze_info = None
 
-    if person_count > 0:
-        faces = face_app.get(img_bgr)
-        if faces:
+    if person_count > 0 and faces:
             faces = sorted(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]), reverse=True)
             primary_face = faces[0]
 

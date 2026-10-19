@@ -147,19 +147,19 @@
                             <!-- Quick Compact Stat Badges -->
                             <div class="flex items-center gap-2 mt-2 flex-wrap">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-bold shadow-2xs">
-                                    <span>🚨 Cảnh báo:</span>
+                                    <span>Cảnh báo:</span>
                                     <span id="modalCheatWarnings" class="font-black text-rose-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs font-bold shadow-2xs">
-                                    <span>📱 Điện thoại:</span>
+                                    <span>Điện thoại:</span>
                                     <span id="modalPhoneViolations" class="font-black text-amber-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-xs font-bold shadow-2xs">
-                                    <span>👥 Khuôn mặt:</span>
+                                    <span>Khuôn mặt:</span>
                                     <span id="modalPersonViolations" class="font-black text-purple-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-xs font-bold shadow-2xs">
-                                    <span>⏱️ Rời màn hình:</span>
+                                    <span>Rời màn hình:</span>
                                     <span id="modalOutOfScreen" class="font-black text-blue-800">0s</span>
                                 </div>
                             </div>
@@ -241,16 +241,16 @@
                 <div id="snapshotFilterButtons" class="flex items-center gap-1.5">
                     <span class="text-[11px] text-gray-400 font-medium hidden md:inline">Lọc ảnh:</span>
                     <button type="button" onclick="filterSnapshots('all')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-2xs" data-snap-filter="all">Tất cả</button>
-                    <button type="button" onclick="filterSnapshots('violations')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="violations">⚠️ Vi phạm AI</button>
-                    <button type="button" onclick="filterSnapshots('normal')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="normal">✅ Bình thường</button>
+                    <button type="button" onclick="filterSnapshots('violations')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="violations">Vi phạm AI</button>
+                    <button type="button" onclick="filterSnapshots('normal')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="normal">Bình thường</button>
                 </div>
 
                 <!-- Timeline filters -->
                 <div id="timelineFilterButtons" class="hidden flex items-center gap-1.5">
                     <span class="text-[11px] text-gray-400 font-medium hidden md:inline">Lọc sự kiện:</span>
                     <button type="button" onclick="filterTimeline('all')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-2xs" data-filter="all">Tất cả</button>
-                    <button type="button" onclick="filterTimeline('violations')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="violations">⚠️ Vi phạm</button>
-                    <button type="button" onclick="filterTimeline('screen')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="screen">🖥️ Rời màn hình</button>
+                    <button type="button" onclick="filterTimeline('violations')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="violations">Vi phạm</button>
+                    <button type="button" onclick="filterTimeline('screen')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="screen">Rời màn hình</button>
                 </div>
             </div>
 
@@ -271,7 +271,7 @@
 
             <!-- Modal Footer -->
             <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between shrink-0">
-                <span class="text-[11px] text-gray-400 hidden sm:inline">💡 Gợi ý: Nhấp vào bất kỳ ảnh nào để phóng to và xem các hộp nhận diện YOLO (Bounding boxes). Dùng "Xem song song" để đối chiếu ảnh và nhật ký cùng lúc.</span>
+                <span class="text-[11px] text-gray-400 hidden sm:inline">Gợi ý: Nhấp vào bất kỳ ảnh nào để phóng to và xem các hộp nhận diện YOLO (Bounding boxes). Dùng "Xem song song" để đối chiếu ảnh và nhật ký cùng lúc.</span>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="refreshCurrentStudentBehavior()" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -369,7 +369,7 @@
                     <div id="quickModalIntervalContainer" class="mt-3.5 pt-3.5 border-t border-slate-200/80 space-y-2.5">
                         <div class="flex items-center justify-between gap-2">
                             <label for="quickModalIntervalInput" class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                <span>⏱️ Chu kỳ chụp ảnh định kỳ:</span>
+                                <span>Chu kỳ chụp ảnh định kỳ:</span>
                             </label>
                             <div class="relative w-28">
                                 <input type="number" id="quickModalIntervalInput" min="15" max="1800" step="5" class="w-full px-2.5 py-1 text-xs font-bold text-indigo-900 bg-white border border-indigo-300 rounded-lg text-right pr-9 shadow-2xs">
@@ -519,7 +519,7 @@
                         <td class="px-4 py-4 text-center">${statusBadge}</td>
                         <td class="px-5 py-4 text-right">
                             <button type="button" onclick="event.stopPropagation(); openStudentBehaviorModal(${attempt.id});" class="inline-flex items-center px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-colors border border-blue-200 shadow-sm">
-                                🔍 So sánh & Hành vi
+                                So sánh & Hành vi
                             </button>
                         </td>
                     `;
@@ -725,7 +725,7 @@
                         }
                         if (simText) {
                             simText.className = `text-[10px] font-extrabold ${simVal >= 50 ? 'text-indigo-700' : 'text-rose-600'} block whitespace-nowrap mt-0.5`;
-                            simText.innerText = `🎯 Độ khớp lúc thi: ${simVal}%`;
+                            simText.innerText = `Độ khớp lúc thi: ${simVal}%`;
                         }
                     } else {
                         if (simBadge) simBadge.classList.add('hidden');

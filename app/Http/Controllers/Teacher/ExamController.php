@@ -97,6 +97,8 @@ class ExamController extends Controller
             'shuffle_questions' => $request->has('shuffle_questions'),
             'shuffle_answers' => $request->has('shuffle_answers'),
             'allow_review' => $request->has('allow_review'),
+            'allow_view_score' => $request->has('allow_view_score'),
+            'semester' => $request->semester,
             'enable_anti_cheat' => $enableAntiCheat,
             'require_fullscreen' => $enableAntiCheat && $request->has('require_fullscreen'),
             'prevent_tab_switch' => $enableAntiCheat && $request->has('prevent_tab_switch'),
@@ -172,6 +174,8 @@ class ExamController extends Controller
             'shuffle_questions' => $request->has('shuffle_questions'),
             'shuffle_answers' => $request->has('shuffle_answers'),
             'allow_review' => $request->has('allow_review'),
+            'allow_view_score' => $request->has('allow_view_score'),
+            'semester' => $request->semester,
             'enable_anti_cheat' => $enableAntiCheat,
             'require_fullscreen' => $enableAntiCheat && $request->has('require_fullscreen'),
             'prevent_tab_switch' => $enableAntiCheat && $request->has('prevent_tab_switch'),
@@ -237,6 +241,12 @@ class ExamController extends Controller
         if ($request->has('require_face_verification')) {
             $data['require_face_verification'] = filter_var($request->input('require_face_verification'), FILTER_VALIDATE_BOOLEAN);
         }
+        if ($request->has('allow_review')) {
+            $data['allow_review'] = filter_var($request->input('allow_review'), FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($request->has('allow_view_score')) {
+            $data['allow_view_score'] = filter_var($request->input('allow_view_score'), FILTER_VALIDATE_BOOLEAN);
+        }
         if ($request->has('proctor_interval_seconds')) {
             $interval = (int) $request->input('proctor_interval_seconds');
             if ($interval >= 15 && $interval <= 1800) {
@@ -251,17 +261,19 @@ class ExamController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật cài đặt giám sát thành công!',
+                'message' => 'Cập nhật cài đặt đề thi thành công!',
                 'exam' => [
                     'id' => $exam->id,
                     'enable_proctor_camera' => (bool) $exam->enable_proctor_camera,
                     'require_face_verification' => (bool) $exam->require_face_verification,
+                    'allow_review' => (bool) $exam->allow_review,
+                    'allow_view_score' => (bool) $exam->allow_view_score,
                     'proctor_interval_seconds' => (int) ($exam->proctor_interval_seconds ?? 120),
                 ]
             ]);
         }
 
-        return back()->with('success', 'Cập nhật cài đặt giám sát thành công!');
+        return back()->with('success', 'Cập nhật cài đặt đề thi thành công!');
     }
 
     public function results(Exam $exam)
@@ -277,15 +289,18 @@ class ExamController extends Controller
                 }
             ])
             ->where('exam_id', $exam->id)
-            ->where('status', 'submitted')
+            ->orderByRaw("CASE WHEN status = 'submitted' THEN 0 ELSE 1 END")
+            ->orderBy('submitted_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
             
+        $submittedAttempts = $attempts->where('status', 'submitted');
         $stats = [
-            'total' => $attempts->count(),
-            'average' => $attempts->avg('score_value') ?? 0,
-            'max' => $attempts->max('score_value') ?? 0,
-            'min' => $attempts->min('score_value') ?? 0,
-            'passed' => $attempts->where('score_value', '>=', 5)->count(),
+            'total' => $submittedAttempts->count(),
+            'average' => $submittedAttempts->avg('score_value') ? round($submittedAttempts->avg('score_value'), 1) : 0,
+            'max' => $submittedAttempts->max('score_value') ?? 0,
+            'min' => $submittedAttempts->min('score_value') ?? 0,
+            'passed' => $submittedAttempts->where('score_value', '>=', 5)->count(),
         ];
         
         $stats['pass_rate'] = $stats['total'] > 0 ? round(($stats['passed'] / $stats['total']) * 100) : 0;

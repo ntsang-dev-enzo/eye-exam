@@ -237,7 +237,7 @@
                         Bạn có chắc chắn muốn xóa danh mục <span id="deleteCategoryName" class="font-bold text-gray-800"></span>?
                     </p>
                     <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-100 mt-3 text-left">
-                        ℹ️ Lưu ý: Các câu hỏi và đề thi thuộc danh mục này sẽ chuyển sang trạng thái <strong>"Chưa phân loại"</strong> (không bị xóa nội dung câu hỏi).
+                        Lưu ý: Các câu hỏi và đề thi thuộc danh mục này sẽ chuyển sang trạng thái <strong>"Chưa phân loại"</strong> (không bị xóa nội dung câu hỏi).
                     </p>
                 </div>
                 <form id="deleteCategoryForm" method="POST" class="pt-3 flex gap-3">

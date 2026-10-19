@@ -66,6 +66,7 @@
                         <th class="px-6 py-3.5 border-b border-gray-100 w-12 text-center">STT</th>
                         <th class="px-6 py-3.5 border-b border-gray-100">Thí sinh</th>
                         <th class="px-6 py-3.5 border-b border-gray-100 text-center">Tình trạng</th>
+                        <th class="px-6 py-3.5 border-b border-gray-100 text-center">Nộp bài lúc</th>
                         <th class="px-6 py-3.5 border-b border-gray-100 text-center">Điểm số</th>
                         <th class="px-6 py-3.5 border-b border-gray-100 text-center">Chi tiết (Đ/S/B)</th>
                         <th class="px-6 py-3.5 border-b border-gray-100 text-center">Khớp Face ID</th>
@@ -97,6 +98,14 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-center">
+                                @if($attempt->submitted_at)
+                                    <span class="font-bold text-gray-900 font-mono text-xs block">{{ $attempt->submitted_at->format('H:i:s') }}</span>
+                                    <span class="text-[11px] text-gray-500">{{ $attempt->submitted_at->format('d/m/Y') }}</span>
+                                @else
+                                    <span class="text-xs text-amber-600 italic">Đang làm bài</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-center">
                                 @if($attempt->status === 'submitted')
                                     <span class="text-lg font-black text-blue-600">{{ $attempt->score_value }}</span>
                                 @else
@@ -124,7 +133,7 @@
                                 <div class="flex flex-col items-center gap-1">
                                     @if($snapSim !== null)
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $snapSim >= 50 ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}" title="Độ so khớp khuôn mặt camera lúc thi">
-                                            <span>📷 Lúc thi:</span>
+                                            <span>Lúc thi:</span>
                                             <strong>{{ $snapSim }}%</strong>
                                         </span>
                                     @elseif($attempt->face_similarity !== null)
@@ -157,13 +166,13 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <button type="button" onclick="event.stopPropagation(); openStudentBehaviorModal({{ $attempt->id }});" class="inline-flex items-center px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-colors border border-blue-200 shadow-sm">
-                                    🔍 Xem hành vi
+                                    Xem hành vi
                                 </button>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="10" class="px-6 py-12 text-center text-gray-500">
                                 Chưa có sinh viên nào tham gia hoặc nộp bài thi này.
                             </td>
                         </tr>
@@ -222,19 +231,19 @@
                             <!-- Quick Compact Stat Badges -->
                             <div class="flex items-center gap-2 mt-2 flex-wrap">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-bold shadow-2xs">
-                                    <span>🚨 Cảnh báo:</span>
+                                    <span>Cảnh báo:</span>
                                     <span id="modalCheatWarnings" class="font-black text-rose-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs font-bold shadow-2xs">
-                                    <span>📱 Điện thoại:</span>
+                                    <span>Điện thoại:</span>
                                     <span id="modalPhoneViolations" class="font-black text-amber-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-xs font-bold shadow-2xs">
-                                    <span>👥 Khuôn mặt:</span>
+                                    <span>Khuôn mặt:</span>
                                     <span id="modalPersonViolations" class="font-black text-purple-800">0</span>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-xs font-bold shadow-2xs">
-                                    <span>⏱️ Rời màn hình:</span>
+                                    <span>Rời màn hình:</span>
                                     <span id="modalOutOfScreen" class="font-black text-blue-800">0s</span>
                                 </div>
                             </div>
@@ -316,16 +325,16 @@
                 <div id="snapshotFilterButtons" class="flex items-center gap-1.5">
                     <span class="text-[11px] text-gray-400 font-medium hidden md:inline">Lọc ảnh:</span>
                     <button type="button" onclick="filterSnapshots('all')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-2xs" data-snap-filter="all">Tất cả</button>
-                    <button type="button" onclick="filterSnapshots('violations')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="violations">⚠️ Vi phạm AI</button>
-                    <button type="button" onclick="filterSnapshots('normal')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="normal">✅ Bình thường</button>
+                    <button type="button" onclick="filterSnapshots('violations')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="violations">Vi phạm AI</button>
+                    <button type="button" onclick="filterSnapshots('normal')" class="snapshot-filter-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-snap-filter="normal">Bình thường</button>
                 </div>
 
                 <!-- Timeline filters -->
                 <div id="timelineFilterButtons" class="hidden flex items-center gap-1.5">
                     <span class="text-[11px] text-gray-400 font-medium hidden md:inline">Lọc sự kiện:</span>
                     <button type="button" onclick="filterTimeline('all')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-2xs" data-filter="all">Tất cả</button>
-                    <button type="button" onclick="filterTimeline('violations')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="violations">⚠️ Vi phạm</button>
-                    <button type="button" onclick="filterTimeline('screen')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="screen">🖥️ Rời màn hình</button>
+                    <button type="button" onclick="filterTimeline('violations')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="violations">Vi phạm</button>
+                    <button type="button" onclick="filterTimeline('screen')" class="timeline-tab px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200" data-filter="screen">Rời màn hình</button>
                 </div>
             </div>
 
@@ -346,7 +355,7 @@
 
             <!-- Modal Footer -->
             <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between shrink-0">
-                <span class="text-[11px] text-gray-400 hidden sm:inline">💡 Gợi ý: Nhấp vào bất kỳ ảnh nào để phóng to và xem hộp nhận diện AI (Bounding boxes). Dùng "Xem song song" để đối chiếu ảnh và nhật ký cùng lúc.</span>
+                <span class="text-[11px] text-gray-400 hidden sm:inline">Gợi ý: Nhấp vào bất kỳ ảnh nào để phóng to và xem hộp nhận diện AI (Bounding boxes). Dùng "Xem song song" để đối chiếu ảnh và nhật ký cùng lúc.</span>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="closeBehaviorModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors shadow-2xs">
                         Đóng cửa sổ
@@ -588,7 +597,7 @@
                         
                         if (simText) {
                             simText.className = `text-[10px] font-extrabold ${simVal >= 50 ? 'text-indigo-700' : 'text-rose-600'} block`;
-                            simText.innerText = `🎯 Độ khớp lúc thi: ${simVal}%`;
+                            simText.innerText = `Độ khớp lúc thi: ${simVal}%`;
                         }
                     } else {
                         simBadge.classList.add('hidden');
@@ -679,7 +688,7 @@
             if (snap.face_similarity !== null && snap.face_similarity !== undefined) {
                 const simVal = Number(snap.face_similarity);
                 const colorClass = simVal >= 50 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white';
-                simBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${colorClass} shadow-xs">🎯 ${simVal}% Khớp</span>`;
+                simBadgeHtml = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${colorClass} shadow-xs">${simVal}% Khớp</span>`;
                 simTextHtml = `
                     <div class="flex items-center justify-between text-[11px] font-bold px-1.5 py-0.5 bg-slate-50 rounded-md border border-slate-100 mt-1">
                         <span class="text-slate-600">Khớp khuôn mặt:</span>
@@ -728,7 +737,7 @@
             if (snap.face_similarity !== null && snap.face_similarity !== undefined) {
                 const simVal = Number(snap.face_similarity);
                 faceSimBadge.className = `px-2.5 py-0.5 rounded text-[10px] font-bold text-white ${simVal >= 50 ? 'bg-indigo-600' : 'bg-rose-600'}`;
-                faceSimBadge.innerText = `🎯 ${simVal}% Trùng khớp (${simVal >= 50 ? 'Đạt chuẩn' : 'Cảnh báo: Lệch nhận diện'})`;
+                faceSimBadge.innerText = `${simVal}% Trùng khớp (${simVal >= 50 ? 'Đạt chuẩn' : 'Cảnh báo: Lệch nhận diện'})`;
             } else {
                 faceSimBadge.className = 'px-2.5 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-slate-300';
                 faceSimBadge.innerText = 'Không phát hiện khuôn mặt';

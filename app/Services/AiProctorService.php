@@ -163,16 +163,16 @@ class AiProctorService
      * @param float|null $threshold
      * @return array
      */
-    public function analyzeProctorSnapshot(string $snapshotImage, ?array $enrolledEmbedding = null, ?float $threshold = null, ?string $verificationImage = null): array
+    public function analyzeProctorSnapshot(string $snapshotImage, ?array $enrolledEmbedding = null, ?float $threshold = null, ?string $verificationImage = null, array $extraData = []): array
     {
         $threshold = $threshold ?? $this->defaultThreshold;
 
         try {
-            $payload = [
+            $payload = array_merge([
                 'image' => $snapshotImage,
                 'enrolled_embedding' => $enrolledEmbedding,
                 'threshold' => $threshold,
-            ];
+            ], $extraData);
             if (!empty($verificationImage)) {
                 $payload['verification_image'] = $verificationImage;
             }

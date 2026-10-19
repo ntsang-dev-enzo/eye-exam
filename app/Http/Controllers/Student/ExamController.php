@@ -15,18 +15,46 @@ use Illuminate\Http\Request;
 
 class ExamController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $assignments = ExamAssignment::with(['exam.subject', 'exam.category'])
+        $assignments = ExamAssignment::with(['exam.subject', 'exam.category', 'schoolClass.course'])
             ->where('student_id', auth()->id())
             ->latest('id')
             ->get();
-            
+
+        // Also fetch any exams the student attempted even if not in assignments
+        $attemptExamIds = ExamAttempt::where('student_id', auth()->id())->pluck('exam_id')->unique();
+        $assignedExamIds = $assignments->pluck('exam_id')->unique();
+        $missingExamIds = $attemptExamIds->diff($assignedExamIds);
+
+        $directExams = collect();
+        if ($missingExamIds->isNotEmpty()) {
+            $directExams = Exam::with(['subject', 'category'])
+                ->whereIn('id', $missingExamIds)
+                ->get();
+        }
+
         // Calculate status and available actions for each assigned exam
         $exams = $assignments->map(function ($assignment) {
             $exam = $assignment->exam;
-            $now = now();
-            
+            if (!$exam) return null;
+            // Inherit semester from course if not directly set on exam
+            if (empty($exam->semester) && $assignment->schoolClass && $assignment->schoolClass->course) {
+                $exam->semester = $assignment->schoolClass->course->semester;
+            }
+            return $exam;
+        })->filter();
+
+        // Append direct attempted exams
+        foreach ($directExams as $directExam) {
+            $exams->push($directExam);
+        }
+
+        // De-duplicate by exam ID
+        $exams = $exams->unique('id')->values();
+
+        $now = now();
+        $exams = $exams->map(function ($exam) use ($now) {
             $attempts = ExamAttempt::where('exam_id', $exam->id)
                 ->where('student_id', auth()->id())
                 ->latest('id')
@@ -80,6 +108,16 @@ class ExamController extends Controller
             return $exam;
         });
 
+        // Semester filter
+        $selectedSemester = $request->query('semester');
+        if (!empty($selectedSemester)) {
+            $exams = $exams->filter(function($exam) use ($selectedSemester) {
+                return $exam->semester === $selectedSemester;
+            })->values();
+        }
+
+        $semesters = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ 3'];
+
         $categories = $exams->map(function ($exam) {
             return $exam->category ? [
                 'id' => 'cat_' . $exam->category->id,
@@ -92,7 +130,7 @@ class ExamController extends Controller
             ] : null);
         })->filter()->unique('id')->values();
         
-        return view('student.exams.index', compact('exams', 'categories'));
+        return view('student.exams.index', compact('exams', 'categories', 'semesters', 'selectedSemester'));
     }
 
     public function join(Request $request)
@@ -238,8 +276,9 @@ class ExamController extends Controller
 
         $questionId = $request->input('question_id');
         $answerId = $request->input('answer_id');
+        $answerText = $request->input('answer_text', $request->input('text_answer'));
 
-        if (empty($answerId)) {
+        if (empty($answerId) && (is_null($answerText) || trim((string)$answerText) === '')) {
             ExamAnswer::where('attempt_id', $attempt->id)->where('question_id', $questionId)->delete();
             return response()->json([
                 'success' => true,
@@ -274,7 +313,8 @@ class ExamController extends Controller
         ExamAnswer::updateOrCreate(
             ['attempt_id' => $attempt->id, 'question_id' => $questionId],
             [
-                'answer_id' => $answerId,
+                'answer_id' => $question->type === 'multiple_choice' ? $answerId : null,
+                'text_answer' => $question->type === 'essay' ? (string)$answerText : null,
                 'is_correct' => $isCorrect,
                 'points_earned' => $pointsEarned,
                 'answered_at' => now(),
@@ -307,9 +347,10 @@ class ExamController extends Controller
         foreach ($answers as $item) {
             $qId = $item['question_id'] ?? null;
             $aId = $item['answer_id'] ?? null;
+            $aText = $item['answer_text'] ?? $item['text_answer'] ?? null;
             if (!$qId) continue;
 
-            if (empty($aId)) {
+            if (empty($aId) && (is_null($aText) || trim((string)$aText) === '')) {
                 ExamAnswer::where('attempt_id', $attempt->id)->where('question_id', $qId)->delete();
                 $syncedAnswersCount++;
                 continue;
@@ -338,7 +379,8 @@ class ExamController extends Controller
             ExamAnswer::updateOrCreate(
                 ['attempt_id' => $attempt->id, 'question_id' => $qId],
                 [
-                    'answer_id' => $aId,
+                    'answer_id' => $question->type === 'multiple_choice' ? $aId : null,
+                    'text_answer' => $question->type === 'essay' ? (string)$aText : null,
                     'is_correct' => $isCorrect,
                     'points_earned' => $pointsEarned,
                     'answered_at' => isset($item['timestamp']) ? \Carbon\Carbon::parse($item['timestamp']) : now(),
@@ -415,35 +457,45 @@ class ExamController extends Controller
 
         // Process any answers submitted with form
         foreach ($exam->questions as $question) {
-            $studentAnswerId = $inputAnswers[$question->id] ?? null;
+            $studentAnswerValue = $inputAnswers[$question->id] ?? null;
 
-            if ($studentAnswerId) {
+            if ($studentAnswerValue !== null && $studentAnswerValue !== '') {
                 $isCorrect = null;
                 $pointsEarned = 0;
+                $answerId = null;
+                $textAnswer = null;
 
                 if ($question->type === 'multiple_choice') {
-                    $correctAnswer = $question->answers()->where('is_correct', true)->first();
-                    $examQuestion = ExamQuestion::where('exam_id', $exam->id)->where('question_id', $question->id)->first();
-                    $maxPoints = $examQuestion->points ?? 1;
+                    $answerId = is_numeric($studentAnswerValue) ? (int)$studentAnswerValue : null;
+                    if ($answerId) {
+                        $correctAnswer = $question->answers()->where('is_correct', true)->first();
+                        $examQuestion = ExamQuestion::where('exam_id', $exam->id)->where('question_id', $question->id)->first();
+                        $maxPoints = $examQuestion->points ?? 1;
 
-                    if ($correctAnswer && $correctAnswer->id == $studentAnswerId) {
-                        $isCorrect = true;
-                        $pointsEarned = $maxPoints;
-                    } else {
-                        $isCorrect = false;
-                        $pointsEarned = 0;
+                        if ($correctAnswer && $correctAnswer->id == $answerId) {
+                            $isCorrect = true;
+                            $pointsEarned = $maxPoints;
+                        } else {
+                            $isCorrect = false;
+                            $pointsEarned = 0;
+                        }
                     }
+                } else {
+                    $textAnswer = (string)$studentAnswerValue;
                 }
 
-                ExamAnswer::updateOrCreate(
-                    ['attempt_id' => $attempt->id, 'question_id' => $question->id],
-                    [
-                        'answer_id' => $studentAnswerId,
-                        'is_correct' => $isCorrect,
-                        'points_earned' => $pointsEarned,
-                        'answered_at' => now(),
-                    ]
-                );
+                if ($answerId !== null || ($textAnswer !== null && trim($textAnswer) !== '')) {
+                    ExamAnswer::updateOrCreate(
+                        ['attempt_id' => $attempt->id, 'question_id' => $question->id],
+                        [
+                            'answer_id' => $answerId,
+                            'text_answer' => $textAnswer,
+                            'is_correct' => $isCorrect,
+                            'points_earned' => $pointsEarned,
+                            'answered_at' => now(),
+                        ]
+                    );
+                }
             }
         }
 
@@ -455,13 +507,20 @@ class ExamController extends Controller
         $unanswered = 0;
 
         foreach ($exam->questions as $question) {
-            if ($allAnswers->has($question->id) && $allAnswers[$question->id]->answer_id) {
+            if ($allAnswers->has($question->id)) {
                 $ans = $allAnswers[$question->id];
-                $totalScore += $ans->points_earned;
-                if ($ans->is_correct === true) {
-                    $correct++;
-                } elseif ($ans->is_correct === false) {
-                    $wrong++;
+                if ($question->type === 'multiple_choice' && $ans->answer_id) {
+                    $totalScore += $ans->points_earned;
+                    if ($ans->is_correct === true) {
+                        $correct++;
+                    } elseif ($ans->is_correct === false) {
+                        $wrong++;
+                    }
+                } elseif ($question->type === 'essay' && !empty(trim($ans->text_answer ?? ''))) {
+                    // Essay question answered
+                    $totalScore += ($ans->points_earned ?? 0);
+                } else {
+                    $unanswered++;
                 }
             } else {
                 $unanswered++;
@@ -596,20 +655,26 @@ class ExamController extends Controller
             return redirect()->route('student.exams.index')->with('error', 'Kỳ thi này không cho phép xem lại bài.');
         }
 
-        $attempt = ExamAttempt::with('answers')->where('exam_id', $exam->id)
+        $allAttempts = ExamAttempt::with('answers')->where('exam_id', $exam->id)
             ->where('student_id', auth()->id())
             ->where('status', 'submitted')
-            ->latest()
-            ->first();
+            ->orderBy('id', 'asc')
+            ->get();
 
+        if ($allAttempts->isEmpty()) {
+            return redirect()->route('student.exams.index')->with('error', 'Không tìm thấy bài thi đã nộp.');
+        }
+
+        $attemptId = request('attempt_id');
+        $attempt = $attemptId ? $allAttempts->firstWhere('id', $attemptId) : null;
         if (!$attempt) {
-            return redirect()->route('student.exams.index')->with('error', 'Không tìm thấy bài thi.');
+            $attempt = $allAttempts->last();
         }
 
         $exam->load(['questions.answers']);
         $studentAnswers = $attempt->answers->keyBy('question_id');
 
-        return view('student.exams.review', compact('exam', 'attempt', 'studentAnswers'));
+        return view('student.exams.review', compact('exam', 'attempt', 'allAttempts', 'studentAnswers'));
     }
 
     public function captureProctorSnapshot(Request $request, $attemptId)
@@ -650,9 +715,14 @@ class ExamController extends Controller
 
         // Call AI Service with dual reference comparison (enrolled profile + entry verification photo)
         $aiService = app(\App\Services\AiProctorService::class);
+        $clientDetections = $request->input('detections', []);
         $result = [];
         try {
-            $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 55.0, $verificationImageBase64);
+            $result = $aiService->analyzeProctorSnapshot($imageB64, $enrolledEmbedding, 55.0, $verificationImageBase64, [
+                'detections' => $clientDetections,
+                'face_count' => $faceCount,
+                'anomaly_type' => $anomalyType,
+            ]);
         } catch (\Exception $e) {
             \Log::warning('AI Proctor analysis error: ' . $e->getMessage());
         }
@@ -669,13 +739,13 @@ class ExamController extends Controller
 
         $status = $result['status'] ?? 'normal';
         $violations = $result['violations'] ?? [];
-        $detections = $result['detections'] ?? [];
+        $detections = !empty($clientDetections) ? $clientDetections : ($result['detections'] ?? []);
         $faceSimilarity = $result['face_similarity'] ?? null;
         $summary = $result['summary'] ?? '';
         $personCount = $result['person_count'] ?? ($faceCount !== null ? $faceCount : 1);
 
         // =========================================================
-        // XỬ LÝ VI PHẠM TỪ BROWSER REALTIME FACE DETECTION
+        // XỬ LÝ VI PHẠM TỪ BROWSER REALTIME (MediaPipe + YOLOv8 Client)
         // =========================================================
         if (!empty($anomalyType)) {
             $status = 'violation';
@@ -696,7 +766,7 @@ class ExamController extends Controller
                 }
             } elseif ($anomalyType === 'multiple_persons') {
                 $personCount = $faceCount !== null ? max(2, $faceCount) : 2;
-                $summary = $anomalyDetails ?: "Phát hiện {$personCount} khuôn mặt cùng xuất hiện trước camera (Nghi vấn có người trợ giúp)";
+                $summary = $anomalyDetails ?: "Phát hiện {$personCount} người cùng xuất hiện trước camera (Nghi vấn có người trợ giúp)";
                 $hasMulti = false;
                 foreach ($violations as $v) {
                     if (($v['type'] ?? '') === 'multiple_persons') { $hasMulti = true; break; }
@@ -709,7 +779,7 @@ class ExamController extends Controller
                     ];
                 }
             } elseif ($anomalyType === 'looking_away') {
-                $summary = $anomalyDetails ?: 'Thí sinh quay đầu không nhìn trực diện màn hình liên tục';
+                $summary = $anomalyDetails ?: 'Thí sinh quay đầu không nhìn trực diện màn hình liên tục quá 10s';
                 $hasTurn = false;
                 foreach ($violations as $v) {
                     if (($v['type'] ?? '') === 'looking_away') { $hasTurn = true; break; }
@@ -718,6 +788,45 @@ class ExamController extends Controller
                     $violations[] = [
                         'type' => 'looking_away',
                         'severity' => 'medium',
+                        'message' => $summary,
+                    ];
+                }
+            } elseif ($anomalyType === 'phone_detected') {
+                $summary = $anomalyDetails ?: 'Phát hiện điện thoại di động trong khung hình camera';
+                $hasPhone = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'phone_detected') { $hasPhone = true; break; }
+                }
+                if (!$hasPhone) {
+                    $violations[] = [
+                        'type' => 'phone_detected',
+                        'severity' => 'critical',
+                        'message' => $summary,
+                    ];
+                }
+            } elseif ($anomalyType === 'suspicious_object') {
+                $summary = $anomalyDetails ?: 'Phát hiện sách hoặc tài liệu trong khung hình';
+                $hasObj = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'suspicious_object') { $hasObj = true; break; }
+                }
+                if (!$hasObj) {
+                    $violations[] = [
+                        'type' => 'suspicious_object',
+                        'severity' => 'medium',
+                        'message' => $summary,
+                    ];
+                }
+            } elseif ($anomalyType === 'suspicious_device') {
+                $summary = $anomalyDetails ?: 'Phát hiện thiết bị máy tính thứ hai trong khung hình';
+                $hasDev = false;
+                foreach ($violations as $v) {
+                    if (($v['type'] ?? '') === 'suspicious_device') { $hasDev = true; break; }
+                }
+                if (!$hasDev) {
+                    $violations[] = [
+                        'type' => 'suspicious_device',
+                        'severity' => 'high',
                         'message' => $summary,
                     ];
                 }

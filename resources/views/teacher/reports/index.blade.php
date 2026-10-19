@@ -676,13 +676,13 @@
                             <div class="text-xs font-bold uppercase tracking-wider mb-0.5">Nhận Định Phong Độ:</div>
                             <div class="font-bold text-sm flex items-center gap-1.5">
                                 @if($currentMatrixItem['status_type'] === 'success')
-                                    <span>🚀</span>
+                                    <svg class="w-4 h-4 text-emerald-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                                 @elseif($currentMatrixItem['status_type'] === 'primary')
-                                    <span>📈</span>
+                                    <svg class="w-4 h-4 text-teal-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                                 @elseif($currentMatrixItem['status_type'] === 'danger')
-                                    <span>🔻</span>
+                                    <svg class="w-4 h-4 text-rose-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
                                 @else
-                                    <span>➖</span>
+                                    <svg class="w-4 h-4 text-blue-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                                 @endif
                                 <span>{{ $currentMatrixItem['status_text'] }}</span>
                             </div>
@@ -766,15 +766,15 @@
                                 <td class="px-4 py-3 text-center">
                                     @if($m['status_type'] === 'success')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            🚀 Tiến bộ vượt bậc
+                                            Tiến bộ vượt bậc
                                         </span>
                                     @elseif($m['status_type'] === 'primary')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
-                                            📈 Có tiến bộ
+                                            Có tiến bộ
                                         </span>
                                     @elseif($m['status_type'] === 'danger')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                            🔻 Cần chú ý
+                                            Cần chú ý
                                         </span>
                                     @elseif($m['status_type'] === 'info')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -782,7 +782,7 @@
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                            ➖ Giữ vững
+                                            Giữ vững
                                         </span>
                                     @endif
                                 </td>

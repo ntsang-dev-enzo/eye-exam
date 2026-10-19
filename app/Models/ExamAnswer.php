@@ -10,6 +10,7 @@ class ExamAnswer extends Model
         'attempt_id',
         'question_id',
         'answer_id',
+        'text_answer',
         'is_correct',
         'points_earned',
         'answered_at'
@@ -19,6 +20,16 @@ class ExamAnswer extends Model
         'answered_at' => 'datetime',
         'is_correct' => 'boolean',
     ];
+
+    public function getAnswerTextAttribute()
+    {
+        return $this->text_answer;
+    }
+
+    public function setAnswerTextAttribute($value)
+    {
+        $this->attributes['text_answer'] = $value;
+    }
 
     public function attempt()
     {

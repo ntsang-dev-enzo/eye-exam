@@ -390,7 +390,7 @@ class TeacherExamAndCategoryTest extends TestCase
     public function test_teacher_can_configure_anti_cheat_rules_and_unlimited_attempts()
     {
         $teacher = User::factory()->create(['role' => 'teacher', 'status' => 'active']);
-        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active', 'face_registered' => true]);
 
         $subject = Subject::create(['code' => 'TEST106', 'name' => 'Test Subject 6', 'status' => true]);
         $teacher->subjects()->attach($subject->id);
@@ -467,7 +467,7 @@ class TeacherExamAndCategoryTest extends TestCase
     public function test_student_can_clear_answer_and_view_categorized_dashboard()
     {
         $teacher = User::factory()->create(['role' => 'teacher', 'status' => 'active']);
-        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active', 'face_registered' => true]);
 
         $subject = Subject::create(['code' => 'TEST107', 'name' => 'Test Subject 7', 'status' => true]);
         $category = Category::create(['subject_id' => $subject->id, 'created_by' => $teacher->id, 'name' => 'Chương 1: Cơ bản']);

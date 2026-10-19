@@ -36,16 +36,35 @@
         </div>
     </div>
 
-    <!-- 2. Subject Filter Buttons (Các nút lọc môn học) -->
-    @if(count($categories) > 0)
-        <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-3.5 sm:p-4 shadow-[0_4px_20px_-4px_rgba(15,39,74,0.03)]">
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+    <!-- 2. Filters: Semester & Category (Lọc theo học kỳ & môn học) -->
+    <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-3.5 sm:p-4 shadow-[0_4px_20px_-4px_rgba(15,39,74,0.03)] space-y-3">
+        <!-- Semester Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-100">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 shrink-0 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Học kỳ:
+            </span>
+            <a href="{{ route('student.exams.index', array_merge(request()->except('semester'))) }}" 
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 {{ empty($selectedSemester) ? 'bg-[#0f274a] text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200' }}">
+                <span>Tất cả học kỳ</span>
+            </a>
+            @foreach($semesters as $sem)
+                <a href="{{ route('student.exams.index', array_merge(request()->except('semester'), ['semester' => $sem])) }}" 
+                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 {{ $selectedSemester === $sem ? 'bg-[#0f274a] text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200' }}">
+                    <span>{{ $sem }}</span>
+                </a>
+            @endforeach
+        </div>
+
+        <!-- Subject Filter Buttons (Các nút lọc môn học) -->
+        @if(count($categories) > 0)
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none pt-1">
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 shrink-0 hidden md:inline-block">Lọc theo môn:</span>
                 
                 <button type="button" 
                     onclick="filterExamCategory('all')" 
                     id="tab-all" 
-                    class="category-pill active px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all duration-200 shrink-0 bg-[#0f274a] text-white shadow-md shadow-blue-950/20 border border-[#0f274a] cursor-pointer flex items-center gap-2">
+                    class="category-pill active px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all duration-200 shrink-0 bg-blue-600 text-white shadow-md shadow-blue-600/20 border border-blue-600 cursor-pointer flex items-center gap-2">
                     <span>Tất cả môn</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-white/20 text-white">{{ $exams->count() }}</span>
                 </button>
@@ -65,8 +84,8 @@
                     </button>
                 @endforeach
             </div>
-        </div>
-    @endif
+        @endif
+    </div>
 
     <!-- 3. Exam Information Cards Grid -->
     @if($exams->isEmpty())
@@ -142,6 +161,11 @@
                                         {{ $exam->category->name }}
                                     </span>
                                 @endif
+                                @if($exam->semester)
+                                    <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                        {{ $exam->semester }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                         
@@ -208,11 +232,20 @@
                         @if($exam->submitted_count > 0)
                             <div class="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">★</span>
+                                    <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                    </span>
                                     <span class="font-bold text-xs text-emerald-900">Điểm cao nhất:</span>
                                 </div>
                                 <span class="font-black text-base text-emerald-700 font-mono">
-                                    {{ $exam->score !== null ? $exam->score . ' đ' : 'Chưa chấm' }}
+                                    @if($exam->allow_view_score ?? true)
+                                        {{ $exam->score !== null ? $exam->score . ' đ' : 'Chưa chấm' }}
+                                    @else
+                                        <span class="text-xs text-slate-500 font-medium italic flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                            Chờ công bố điểm
+                                        </span>
+                                    @endif
                                 </span>
                             </div>
                         @endif

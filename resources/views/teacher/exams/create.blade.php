@@ -34,6 +34,16 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Học kỳ (Tùy chọn)</label>
+                        <select name="semester" class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-gray-50 text-sm">
+                            <option value="">-- Chọn học kỳ --</option>
+                            <option value="Học kỳ 1" {{ old('semester') == 'Học kỳ 1' ? 'selected' : '' }}>Học kỳ 1</option>
+                            <option value="Học kỳ 2" {{ old('semester') == 'Học kỳ 2' ? 'selected' : '' }}>Học kỳ 2</option>
+                            <option value="Học kỳ 3" {{ old('semester') == 'Học kỳ 3' ? 'selected' : '' }}>Học kỳ 3</option>
+                        </select>
+                    </div>
                     
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tên đề thi <span class="text-red-500">*</span></label>
@@ -228,6 +238,10 @@
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="allow_review" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4" checked>
                             <span class="text-sm text-gray-700 font-medium">Cho phép sinh viên xem lại bài thi sau khi nộp</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="allow_view_score" value="1" class="text-blue-600 focus:ring-blue-500 rounded text-sm w-4 h-4" checked>
+                            <span class="text-sm text-gray-700 font-medium">Cho phép sinh viên xem điểm số</span>
                         </label>
                     </div>
                 </div>

@@ -6,7 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Làm bài thi: {{ $exam->title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="{{ asset('vendor/face-api/face-api.min.js') }}"></script>
+    <!-- MediaPipe Face Mesh -->
+    <script src="{{ asset('vendor/mediapipe/face_mesh.js') }}"></script>
+    <!-- ONNX Runtime Web for Lightweight Client YOLOv8 Realtime Detection -->
+    <script src="{{ asset('vendor/yolo/ort.min.js') }}"></script>
     <style>
         .no-select {
             -webkit-user-select: none;
@@ -175,7 +178,7 @@
                                                 <textarea name="answers[{{ $question->id }}]" rows="6" 
                                                     class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm text-slate-800 placeholder:text-slate-400 p-4" 
                                                     placeholder="Nhập câu trả lời của bạn..."
-                                                    oninput="handleEssayInput({{ $globalIndex }}, {{ $question->id }}, this.value)"></textarea>
+                                                    oninput="handleEssayInput({{ $globalIndex }}, {{ $question->id }}, this.value)">{{ $savedAnswer ? ($savedAnswer->text_answer ?? $savedAnswer->answer_text) : '' }}</textarea>
                                             </div>
                                         @endif
 
@@ -239,7 +242,8 @@
                 <div class="grid grid-cols-5 gap-3" id="navigatorGrid">
                     @foreach($questions as $index => $question)
                         @php
-                            $isPreAnswered = $savedAnswers->has($question->id) && $savedAnswers[$question->id]->answer_id !== null;
+                            $ansObj = $savedAnswers->get($question->id);
+                            $isPreAnswered = $ansObj && ($ansObj->answer_id !== null || !empty(trim($ansObj->text_answer ?? $ansObj->answer_text ?? '')));
                         @endphp
                         <button type="button" id="nav-{{ $index + 1 }}" onclick="jumpToQuestion({{ $index + 1 }})" 
                             class="aspect-square flex items-center justify-center rounded-xl border {{ $isPreAnswered ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 bg-white text-slate-600' }} font-bold text-sm transition-all hover:border-indigo-400 hover:text-indigo-600">
@@ -483,7 +487,11 @@
 
         // Initialize pre-answered questions
         @foreach($questions as $index => $question)
-            @if($savedAnswers->has($question->id) && $savedAnswers[$question->id]->answer_id !== null)
+            @php 
+                $ansObj = $savedAnswers->get($question->id);
+                $isPreAnswered = $ansObj && ($ansObj->answer_id !== null || !empty(trim($ansObj->text_answer ?? $ansObj->answer_text ?? '')));
+            @endphp
+            @if($isPreAnswered)
                 answeredQuestions.add({{ $index + 1 }});
             @endif
         @endforeach
@@ -797,41 +805,94 @@
             });
         }
 
-        // Copy, Paste, Cut Handlers:
-        // Cho phép sao chép từ bản nháp/máy tính và dán vào ô làm bài thi lúc đang thi
+        // Internal Clipboard Memory System to strictly prevent pasting external content into notes or questions
+        window.__internalClipboardSet = new Set();
+        window.__internalClipboardText = '';
+
         if (antiCheatConfig.preventCopyPaste) {
             document.addEventListener('copy', event => {
-                // Cho phép sao chép nội dung từ bảng nháp cá nhân hoặc máy tính khoa học
-                if (event.target && event.target.closest('#examPersonalNote, #personalNoteWidget, #scientificCalculatorWidget')) {
-                    return; // Hợp lệ, cho phép sao chép nháp
+                // Cho phép sao chép nội dung từ bảng nháp cá nhân, máy tính hoặc bài làm của chính mình
+                if (event.target && event.target.closest('#examPersonalNote, #personalNoteWidget, #scientificCalculatorWidget, textarea, input')) {
+                    const sel = window.getSelection().toString() || (event.target.value ? event.target.value.substring(event.target.selectionStart || 0, event.target.selectionEnd || 0) : '');
+                    if (sel && sel.trim()) {
+                        window.__internalClipboardSet.add(sel.trim());
+                        window.__internalClipboardText = sel;
+                    }
+                    return; // Hợp lệ, cho phép sao chép nội bộ
                 }
                 event.preventDefault();
                 sendAntiCheatLog('copy', { action: 'copy_question_text' });
                 showToastAlert('Cảnh báo vi phạm', 'Hành vi sao chép đề bài thi bị nghiêm cấm theo quy chế phòng thi.', 'danger');
             });
 
+            document.addEventListener('cut', event => {
+                // Cho phép cắt trong vùng nháp cá nhân hoặc ô trả lời
+                if (event.target && event.target.closest('#examPersonalNote, #personalNoteWidget, #scientificCalculatorWidget, textarea, input')) {
+                    const sel = window.getSelection().toString() || (event.target.value ? event.target.value.substring(event.target.selectionStart || 0, event.target.selectionEnd || 0) : '');
+                    if (sel && sel.trim()) {
+                        window.__internalClipboardSet.add(sel.trim());
+                        window.__internalClipboardText = sel;
+                    }
+                    return; // Hợp lệ
+                }
+                event.preventDefault();
+                sendAntiCheatLog('cut', { action: 'cut_text' });
+                showToastAlert('Cảnh báo vi phạm', 'Hành vi cắt (Cut) nội dung bài thi bị cấm.', 'danger');
+            });
+
             document.addEventListener('paste', event => {
-                // Cho phép dán nội dung nháp vào ô câu trả lời bài thi hoặc bảng nháp cá nhân
+                const pastedText = (event.clipboardData || window.clipboardData)?.getData('text') || '';
+                const trimmed = pastedText.trim();
+
+                // Xác thực xem nội dung dán có bắt nguồn từ bản sao chép nội bộ trong phòng thi không
+                let isInternalCopy = false;
+                if (trimmed && (
+                    window.__internalClipboardText === pastedText ||
+                    (window.__internalClipboardText && window.__internalClipboardText.includes(trimmed)) ||
+                    window.__internalClipboardSet.has(trimmed)
+                )) {
+                    isInternalCopy = true;
+                } else if (trimmed) {
+                    for (let item of window.__internalClipboardSet) {
+                        if (item.includes(trimmed) || trimmed.includes(item)) {
+                            isInternalCopy = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isInternalCopy) {
+                    event.preventDefault();
+                    sendAntiCheatLog('paste', { 
+                        action: 'paste_external_text', 
+                        target: event.target.id || event.target.tagName,
+                        length: pastedText.length,
+                        preview: pastedText.substring(0, 60)
+                    });
+                    showToastAlert('Cảnh báo gian lận', 'Nghiêm cấm sao chép nội dung từ bên ngoài dán vào bài thi hoặc bảng ghi chú!', 'danger');
+                    return;
+                }
+
+                // Nếu là nội dung nháp nội bộ hợp lệ, cho phép dán vào ô trả lời bài thi hoặc bảng nháp cá nhân
                 if (event.target && (
                     event.target.tagName === 'TEXTAREA' || 
                     event.target.tagName === 'INPUT' || 
                     event.target.closest('#examPersonalNote, #personalNoteWidget, #scientificCalculatorWidget, #questionsArea')
                 )) {
-                    return; // Hợp lệ, cho phép dán vào bài làm lúc đang thi
+                    return; // Hợp lệ
                 }
                 event.preventDefault();
                 sendAntiCheatLog('paste', { action: 'paste_text' });
                 showToastAlert('Cảnh báo vi phạm', 'Hành vi dán (Paste) nội dung không được phép trong phòng thi.', 'danger');
             });
 
-            document.addEventListener('cut', event => {
-                // Cho phép cắt trong vùng nháp cá nhân hoặc ô trả lời
-                if (event.target && event.target.closest('#examPersonalNote, #personalNoteWidget, #scientificCalculatorWidget, textarea, input')) {
-                    return; // Hợp lệ
+            // Ngăn chặn kéo thả nội dung từ bên ngoài vào ô ghi chú hoặc bài làm
+            document.addEventListener('drop', event => {
+                if (event.target && (event.target.id === 'examPersonalNote' || event.target.closest('#examPersonalNote, #personalNoteWidget, textarea, input'))) {
+                    event.preventDefault();
+                    sendAntiCheatLog('paste', { action: 'drop_external_text', target: event.target.id || event.target.tagName });
+                    showToastAlert('Cảnh báo gian lận', 'Không được phép kéo thả nội dung từ bên ngoài vào bài thi!', 'danger');
                 }
-                event.preventDefault();
-                sendAntiCheatLog('cut', { action: 'cut_text' });
-                showToastAlert('Cảnh báo vi phạm', 'Hành vi cắt (Cut) nội dung bài thi bị cấm.', 'danger');
             });
         }
 
@@ -1131,7 +1192,7 @@
                         jumpToQuestion(qNum);
                     };
                     badgeBtn.className = 'px-3 py-1.5 bg-rose-100/90 hover:bg-rose-200 text-rose-900 border border-rose-300 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer';
-                    badgeBtn.innerHTML = `<span>Câu ${qNum} ➔</span>`;
+                    badgeBtn.innerHTML = `<span>Câu ${qNum} &rarr;</span>`;
                     newBadgesContainer.appendChild(badgeBtn);
                 });
 
@@ -1218,14 +1279,14 @@
                 });
 
                 proctorVideo.srcObject = proctorStream;
-                try {
-                    await proctorVideo.play();
-                } catch(e) {
-                    console.log('Video play policy handled:', e);
-                }
+                proctorVideo.onloadedmetadata = () => {
+                    proctorVideo.play().catch(e => console.log('Video play policy handled:', e));
+                    initRealtimeProctorEngine();
+                };
+                proctorVideo.play().catch(e => console.log('Video play policy handled:', e));
 
-                // Start In-Browser Realtime Face Detection (0 or >1 faces & head pose)
-                initRealtimeFaceDetection();
+                // Start In-Browser Realtime Proctor Engine (MediaPipe Face Mesh & YOLOv8)
+                initRealtimeProctorEngine();
 
                 // Nếu kỳ thi không yêu cầu toàn màn hình thì bắt đầu snapshot sau 6s, ngược lại sẽ bắt đầu khi thí sinh bấm Bật toàn màn hình
                 if (isExamActive) {
@@ -1237,6 +1298,7 @@
 
             } catch (err) {
                 console.error('Proctor camera init error:', err);
+                setTimeout(initProctorCamera, 2000);
             }
         }
 
@@ -1287,7 +1349,11 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ image: snapData })
+                    body: JSON.stringify({ 
+                        image: snapData,
+                        detections: currentDetections,
+                        face_count: currentFaceCount
+                    })
                 });
 
                 const data = await response.json();
@@ -1311,25 +1377,20 @@
         }
 
         // ----------------------------------------------------
-        // REALTIME CLIENT-SIDE HEAD POSE & EYE TRACKING
-        // Chạy ngầm trên trình duyệt để theo dõi hướng đầu và mắt
-        // Khi quay đầu sang trái hoặc phải liên tục 6-8 giây -> ghi log thời gian & hướng quay
-        // Tuyệt đối không hiện bất kỳ thông báo nào cho thí sinh
+        // REALTIME CLIENT-SIDE ENGINE: MEDIAPIPE FACE MESH & YOLOV8
+        // Chạy hoàn toàn trên trình duyệt sinh viên (In-Browser):
+        // 1. MediaPipe Face Mesh: Đếm người (0 hoặc > 1 người), theo dõi chuyển động đầu (quay trái/phải/lên/xuống quá 10s)
+        // 2. YOLOv8 nhẹ (ONNX Runtime Web): Phát hiện vật dụng gian lận (điện thoại, sách/tài liệu, laptop)
+        // 3. Giảm tải triệt để cho Backend Server
         // ----------------------------------------------------
-        // ----------------------------------------------------
-        // REALTIME CLIENT-SIDE FACE & HEAD POSE TRACKING
-        // Chạy nhẹ trên trình duyệt bằng TinyFaceDetector:
-        // ----------------------------------------------------
-        // REALTIME CLIENT-SIDE FACE DETECTION (LIGHTWEIGHT)
-        // Chạy siêu nhẹ trên trình duyệt bằng TinyFaceDetector:
-        // 1. Phát hiện 0 khuôn mặt (Vắng mặt trước camera >= 2.5s)
-        // 2. Phát hiện > 1 khuôn mặt (Nhiều người trước camera >= 1.0s)
-        // 3. Theo dõi quay mặt sang hướng khác liên tục >= 10s (khi có 1 khuôn mặt)
-        // Khi phát hiện bất thường: TỰ ĐỘNG CHỤP ẢNH TỨC THÌ GỬI VỀ CHO GIẢNG VIÊN KIỂM TRA
-        // (Lưu vào ExamProctorSnapshot và hiển thị ngay trên Bộ sưu tập ảnh AI của Giảng viên)
-        // ----------------------------------------------------
-        let isFaceTrackingRunning = false;
-        let faceTrackingTimer = null;
+        let isRealtimeEngineRunning = false;
+        let faceMeshInstance = null;
+        let yoloSession = null;
+        let isYoloInferencing = false;
+        let isFaceMeshProcessing = false;
+        let yoloLastInferenceTime = 0;
+        const YOLO_INTERVAL_MS = 800; // YOLOv8 inference định kỳ mỗi 800ms
+
         let absentStartTime = null;
         let lastAbsentLogTime = 0;
         let multipleFacesStartTime = null;
@@ -1337,10 +1398,14 @@
         let currentSustainedDirection = null; // 'left' | 'right' | 'down' | 'up' | null
         let sustainedDirectionStartTime = null;
         let lastHeadTurnLogTime = 0;
+        let currentFaceCount = 1;
+        let currentDetections = [];
+        let lastPhoneLogTime = 0;
+        let lastSuspiciousLogTime = 0;
 
-        const ABSENT_THRESHOLD_MS = 2500; // 2.5s liên tục không thấy khuôn mặt thí sinh
-        const MULTIPLE_THRESHOLD_MS = 1000; // 1.0s liên tục thấy >= 2 khuôn mặt
-        const SUSTAINED_TURN_MIN_SECONDS = 10; // 10 giây quay mặt sang hướng khác liên tục mới chụp ảnh
+        const ABSENT_THRESHOLD_MS = 2500; // 2.5s liên tục không thấy thí sinh
+        const MULTIPLE_THRESHOLD_MS = 1000; // 1.0s liên tục thấy >= 2 người
+        const SUSTAINED_TURN_MIN_SECONDS = 10; // Quay đầu/cúi/ngẩng liên tục quá 10 giây mới ghi vi phạm
         const ANOMALY_LOG_COOLDOWN_MS = 15000; // Cooldown 15s giữa 2 lần ghi nhận cùng loại
 
         function captureOffscreenSnapshot(video) {
@@ -1391,7 +1456,7 @@
             ctx.lineWidth = 1;
             ctx.strokeRect(x, y, width, height);
 
-            // Nhãn trạng thái (Tag hiển thị trên đầu khuôn mặt)
+            // Nhãn trạng thái (Tag hiển thị trên đầu)
             if (label) {
                 ctx.font = 'bold 10px Inter, sans-serif';
                 const textMetrics = ctx.measureText(label);
@@ -1415,7 +1480,7 @@
             ctx.restore();
         }
 
-        async function triggerInstantAnomalySnapshot(anomalyType, details, faceCount = 1, durationSeconds = null, directionText = null) {
+        async function triggerInstantAnomalySnapshot(anomalyType, details, faceCount = 1, durationSeconds = null, directionText = null, detections = []) {
             if (!isExamActive || isSubmitting) return;
             const video = document.getElementById('proctorVideo');
             if (!video || video.videoWidth === 0) return;
@@ -1423,9 +1488,9 @@
             const snapData = captureOffscreenSnapshot(video);
             if (!snapData) return;
 
-            console.log(`[AI Proctor Realtime] 📸 Tự động chụp & gửi ảnh bất thường (${anomalyType}) về cho giảng viên kiểm tra...`);
+            console.log(`[AI Proctor Realtime] Tự động chụp & gửi ảnh bất thường (${anomalyType}) về cho giảng viên kiểm tra...`);
 
-            // 1. Gửi ảnh lên proctor-snapshot để lưu trực tiếp vào ExamProctorSnapshot và hiển thị trong Bộ sưu tập ảnh Giảng viên
+            // 1. Gửi ảnh lên proctor-snapshot kèm detections client-side
             try {
                 fetch('{{ route("student.exams.proctor-snapshot", $attempt->id) }}', {
                     method: 'POST',
@@ -1436,11 +1501,12 @@
                     },
                     body: JSON.stringify({
                         image: snapData,
-                        trigger_source: 'browser_realtime_face_detection',
+                        trigger_source: 'browser_realtime_detection',
                         anomaly_type: anomalyType,
                         face_count: faceCount,
                         details: details,
-                        duration_seconds: durationSeconds
+                        duration_seconds: durationSeconds,
+                        detections: detections
                     })
                 }).then(r => r.json()).then(data => {
                     console.log('[AI Proctor Realtime] Đã lưu snapshot bất thường vào ExamProctorSnapshot cho giảng viên:', data);
@@ -1457,327 +1523,516 @@
                 face_count: faceCount,
                 duration_seconds: durationSeconds,
                 direction_text: directionText,
-                source: 'browser_realtime_face_detection'
+                detections: detections,
+                source: 'browser_realtime_detection'
             }, durationSeconds, snapData);
         }
 
-        async function initRealtimeFaceDetection() {
-            if (isFaceTrackingRunning) return;
+        // ====================================================
+        // YOLOv8 CLIENT-SIDE (ONNX RUNTIME WEB)
+        // ====================================================
+        let yoloOffscreenCanvas = null;
 
-            if (typeof faceapi === 'undefined') {
-                console.log('[AI Proctor] Thư viện face-api đang tải, sẽ thử lại sau 500ms...');
-                setTimeout(initRealtimeFaceDetection, 500);
+        function calculateIoU(boxA, boxB) {
+            const xA = Math.max(boxA[0], boxB[0]);
+            const yA = Math.max(boxA[1], boxB[1]);
+            const xB = Math.min(boxA[2], boxB[2]);
+            const yB = Math.min(boxA[3], boxB[3]);
+            const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+            const boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1]);
+            const boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1]);
+            return interArea / (boxAArea + boxBArea - interArea + 1e-6);
+        }
+
+        function applyNMS(boxes, iouThreshold = 0.45) {
+            boxes.sort((a, b) => b.confidence - a.confidence);
+            const selected = [];
+            for (const b of boxes) {
+                let keep = true;
+                for (const s of selected) {
+                    if (b.label === s.label && calculateIoU(b.box, s.box) > iouThreshold) {
+                        keep = false;
+                        break;
+                    }
+                }
+                if (keep) selected.push(b);
+            }
+            return selected;
+        }
+
+        async function initClientYolo() {
+            if (typeof ort === 'undefined') {
+                console.warn('[AI Proctor] ONNX Runtime Web chưa sẵn sàng, thử lại sau 500ms...');
+                setTimeout(initClientYolo, 500);
                 return;
             }
 
-            isFaceTrackingRunning = true;
-            console.log('[AI Proctor] Khởi tạo Realtime In-Browser Face Detection (0 hoặc >1 khuôn mặt)...');
-
-            const modelPath = '{{ asset("vendor/face-api/models") }}';
-
-            // 1. Nạp TinyFaceDetector trước để phát hiện khuôn mặt siêu nhẹ (~15ms)
             try {
-                if (!faceapi.nets.tinyFaceDetector.isLoaded) {
-                    await faceapi.nets.tinyFaceDetector.loadFromUri(modelPath);
-                    console.log('[AI Proctor] Đã nạp thành công TinyFaceDetector siêu nhẹ.');
+                if (ort.env && ort.env.wasm) {
+                    ort.env.wasm.wasmPaths = '{{ asset("vendor/yolo") }}/';
+                    ort.env.wasm.numThreads = 1;
                 }
-                // Nạp thêm FaceLandmark68 ngầm để theo dõi hướng đầu khi có 1 khuôn mặt mà không làm chặn luồng
-                if (!faceapi.nets.faceLandmark68Net.isLoaded) {
-                    faceapi.nets.faceLandmark68Net.loadFromUri(modelPath)
-                        .then(() => console.log('[AI Proctor] Đã nạp thành công FaceLandmark68.'))
-                        .catch(err => console.warn('[AI Proctor] Landmark load warning:', err));
-                }
-            } catch (err) {
-                console.warn('[AI Proctor] Lỗi nạp model AI trình duyệt, sẽ tự động thử lại sau 2s:', err);
-                isFaceTrackingRunning = false;
-                setTimeout(initRealtimeFaceDetection, 2000);
-                return;
-            }
 
-            if (faceTrackingTimer) clearInterval(faceTrackingTimer);
-            faceTrackingTimer = setInterval(async () => {
-                if (!isExamActive || isSubmitting || typeof faceapi === 'undefined') return;
-                if (!faceapi.nets.tinyFaceDetector.isLoaded) return;
-
-                const video = document.getElementById('proctorVideo');
-                if (!video || video.paused || video.ended || video.readyState < 2 || video.videoWidth === 0) return;
+                const modelUrl = '{{ asset("vendor/yolo/yolov8n.onnx") }}';
+                console.log('[AI Proctor] Đang nạp model YOLOv8n nhẹ (ONNX Runtime Web):', modelUrl);
 
                 try {
-                    // PHÁT HIỆN TẤT CẢ KHUÔN MẶT SIÊU NHẸ BẰNG TINY FACE DETECTOR (~15ms)
-                    const detections = await faceapi.detectAllFaces(
-                        video, 
-                        new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 })
-                    );
+                    yoloSession = await ort.InferenceSession.create(modelUrl, {
+                        executionProviders: ['webgl', 'wasm'],
+                        graphOptimizationLevel: 'all'
+                    });
+                } catch (epErr) {
+                    console.warn('[AI Proctor] WebGL provider failed, falling back to WASM for YOLO:', epErr);
+                    yoloSession = await ort.InferenceSession.create(modelUrl, {
+                        executionProviders: ['wasm'],
+                        graphOptimizationLevel: 'all'
+                    });
+                }
+                console.log('[AI Proctor] Nạp thành công YOLOv8n Client-Side (In-Browser Realtime)!');
+            } catch (err) {
+                console.warn('[AI Proctor] Lỗi nạp YOLOv8n trên trình duyệt:', err);
+            }
+        }
 
-                    const faceCount = detections ? detections.length : 0;
-                    const now = Date.now();
+        async function runYoloInference() {
+            if (!yoloSession || isYoloInferencing || isSubmitting) return;
+            const video = document.getElementById('proctorVideo');
+            if (!video || video.paused || video.ended || video.readyState < 2 || video.videoWidth === 0) return;
 
-                    // =========================================================
-                    // CẬP NHẬT CANVAS OVERLAY & BOUNDING BOX TRỰC TIẾP TRÊN CAMERA
-                    // =========================================================
-                    const overlayCanvas = document.getElementById('proctorOverlayCanvas');
-                    let ctx = null;
-                    if (overlayCanvas) {
-                        if (overlayCanvas.width !== video.videoWidth || overlayCanvas.height !== video.videoHeight) {
-                            overlayCanvas.width = video.videoWidth;
-                            overlayCanvas.height = video.videoHeight;
-                        }
-                        ctx = overlayCanvas.getContext('2d');
-                        ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-                    }
+            isYoloInferencing = true;
+            try {
+                if (!yoloOffscreenCanvas) {
+                    yoloOffscreenCanvas = document.createElement('canvas');
+                    yoloOffscreenCanvas.width = 320;
+                    yoloOffscreenCanvas.height = 320;
+                }
+                const yCtx = yoloOffscreenCanvas.getContext('2d');
+                yCtx.drawImage(video, 0, 0, 320, 320);
+                const imgData = yCtx.getImageData(0, 0, 320, 320);
 
-                    const wrapperEl = document.getElementById('proctorVideoWrapper');
-                    const countBadge = document.getElementById('proctorFaceCountBadge');
-                    const countDot = document.getElementById('proctorFaceCountDot');
-                    const countText = document.getElementById('proctorFaceCountText');
-                    const alertBanner = document.getElementById('proctorAlertBanner');
-                    const alertText = document.getElementById('proctorAlertText');
+                const floatData = new Float32Array(3 * 320 * 320);
+                const totalPx = 320 * 320;
+                const d = imgData.data;
+                for (let i = 0; i < totalPx; i++) {
+                    floatData[i] = d[i * 4] / 255.0;
+                    floatData[totalPx + i] = d[i * 4 + 1] / 255.0;
+                    floatData[totalPx * 2 + i] = d[i * 4 + 2] / 255.0;
+                }
 
-                    // =========================================================
-                    // 1. PHÁT HIỆN 0 KHUÔN MẶT (THÍ SINH VẮNG MẶT / RỜI KHỎI CAMERA)
-                    // =========================================================
-                    if (faceCount === 0) {
-                        currentSustainedDirection = null;
-                        sustainedDirectionStartTime = null;
-                        multipleFacesStartTime = null;
+                const tensor = new ort.Tensor('float32', floatData, [1, 3, 320, 320]);
+                const results = await yoloSession.run({ images: tensor });
+                const output = results.output0.data; // shape: [1, 84, 2100]
 
-                        // Cập nhật giao diện cảnh báo
-                        if (countText) countText.innerText = '0 khuôn mặt';
-                        if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping';
-                        if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-rose-950/85 border border-rose-500/50 rounded-md text-[9px] font-bold text-rose-300 flex items-center gap-1.5 transition-all z-10';
-                        if (wrapperEl) {
-                            wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
-                            wrapperEl.classList.remove('border-slate-800');
-                        }
-                        if (alertBanner) alertBanner.classList.remove('hidden');
-                        if (alertText) alertText.innerText = 'Cảnh báo: 0 khuôn mặt!';
+                const rawCandidates = [];
+                const scaleX = video.videoWidth / 320;
+                const scaleY = video.videoHeight / 320;
 
-                        // Vẽ khung đỏ mờ gợi ý vị trí khuôn mặt
-                        if (ctx && overlayCanvas) {
-                            ctx.save();
-                            ctx.strokeStyle = 'rgba(244, 63, 94, 0.5)';
-                            ctx.setLineDash([8, 6]);
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(overlayCanvas.width * 0.18, overlayCanvas.height * 0.15, overlayCanvas.width * 0.64, overlayCanvas.height * 0.7);
-                            ctx.restore();
-                        }
+                const targets = [
+                    { id: 67, label: 'cell phone', threshold: 0.35 },
+                    { id: 63, label: 'laptop', threshold: 0.40 },
+                    { id: 73, label: 'book', threshold: 0.40 },
+                    { id: 0, label: 'person', threshold: 0.40 }
+                ];
 
-                        if (absentStartTime === null) {
-                            absentStartTime = now;
-                        } else {
-                            const absentMs = now - absentStartTime;
-                            if (absentMs >= ABSENT_THRESHOLD_MS && (now - lastAbsentLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
-                                lastAbsentLogTime = now;
-                                const absentSec = Math.max(2, Math.round(absentMs / 1000));
-                                const msg = `Camera không phát hiện thấy thí sinh trước màn hình (Vắng mặt ${absentSec} giây)`;
+                for (let i = 0; i < 2100; i++) {
+                    const cx = output[0 * 2100 + i];
+                    const cy = output[1 * 2100 + i];
+                    const w = output[2 * 2100 + i];
+                    const h = output[3 * 2100 + i];
 
-                                // Hiển thị cảnh báo trực tiếp cho thí sinh
-                                showToastAlert('Cảnh báo vắng mặt', 'Không phát hiện thấy khuôn mặt thí sinh trước camera! Vui lòng ngồi trước màn hình.', 'danger');
+                    for (const t of targets) {
+                        const conf = output[(4 + t.id) * 2100 + i];
+                        if (conf >= t.threshold) {
+                            const x1 = Math.max(0, (cx - w / 2) * scaleX);
+                            const y1 = Math.max(0, (cy - h / 2) * scaleY);
+                            const x2 = Math.min(video.videoWidth, (cx + w / 2) * scaleX);
+                            const y2 = Math.min(video.videoHeight, (cy + h / 2) * scaleY);
 
-                                // Tự động chụp ảnh gửi về cho giảng viên kiểm tra ngay lập tức
-                                triggerInstantAnomalySnapshot('face_absent', msg, 0, absentSec);
-                            }
-                        }
-                        return;
-                    } else {
-                        absentStartTime = null;
-                    }
-
-                    // =========================================================
-                    // 2. PHÁT HIỆN TỪ 2 KHUÔN MẶT TRỞ LÊN (> 1 NGƯỜI TRƯỚC CAMERA)
-                    // =========================================================
-                    if (faceCount > 1) {
-                        currentSustainedDirection = null;
-                        sustainedDirectionStartTime = null;
-
-                        // Cập nhật giao diện cảnh báo đỏ
-                        if (countText) countText.innerText = `${faceCount} khuôn mặt`;
-                        if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping';
-                        if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-rose-950/85 border border-rose-500/50 rounded-md text-[9px] font-bold text-rose-300 flex items-center gap-1.5 transition-all z-10';
-                        if (wrapperEl) {
-                            wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
-                            wrapperEl.classList.remove('border-slate-800');
-                        }
-                        if (alertBanner) alertBanner.classList.remove('hidden');
-                        if (alertText) alertText.innerText = `Cảnh báo: Phát hiện ${faceCount} khuôn mặt!`;
-
-                        // Vẽ Bounding Box màu đỏ trực tiếp quanh từng khuôn mặt
-                        if (ctx && overlayCanvas) {
-                            detections.forEach((det, idx) => {
-                                const b = det.box;
-                                const flippedX = overlayCanvas.width - (b.x + b.width);
-                                drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, `Mặt #${idx + 1} (Vi phạm)`, '#f43f5e', '#ffffff');
+                            rawCandidates.push({
+                                label: t.label,
+                                coco_id: t.id,
+                                confidence: Math.round(conf * 100),
+                                box: [x1, y1, x2, y2]
                             });
                         }
-
-                        if (multipleFacesStartTime === null) {
-                            multipleFacesStartTime = now;
-                        } else {
-                            const multiMs = now - multipleFacesStartTime;
-                            if (multiMs >= MULTIPLE_THRESHOLD_MS && (now - lastMultipleLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
-                                lastMultipleLogTime = now;
-                                const msg = `Phát hiện ${faceCount} khuôn mặt cùng xuất hiện trước camera (Nghi vấn có người trợ giúp)`;
-
-                                // Hiển thị cảnh báo trực tiếp cho thí sinh
-                                showToastAlert('Cảnh báo vi phạm', `Phát hiện ${faceCount} khuôn mặt cùng xuất hiện trước camera! Vui lòng chỉ một mình làm bài thi.`, 'danger');
-
-                                // Tự động chụp ảnh gửi về cho giảng viên kiểm tra ngay lập tức
-                                triggerInstantAnomalySnapshot('multiple_persons', msg, faceCount, null);
-                            }
-                        }
-                        return;
-                    } else {
-                        multipleFacesStartTime = null;
                     }
-
-                    // =========================================================
-                    // 3. ĐÚNG 1 KHUÔN MẶT (HỢP LỆ)
-                    // =========================================================
-                    if (countText) countText.innerText = '1 khuôn mặt';
-                    if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
-                    if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-black/75 border border-white/10 rounded-md text-[9px] font-bold text-emerald-400 flex items-center gap-1.5 transition-all z-10';
-
-                    const b = detections[0].box;
-                    const flippedX = overlayCanvas ? overlayCanvas.width - (b.x + b.width) : 0;
-
-                    // Theo dõi hướng mặt & ánh mắt (khi landmark đã sẵn sàng)
-                    if (faceapi.nets.faceLandmark68Net.isLoaded && detections.length === 1) {
-                        try {
-                            const faceWithLandmarks = await faceapi.detectSingleFace(
-                                video, 
-                                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 })
-                            ).withFaceLandmarks();
-
-                            if (faceWithLandmarks && faceWithLandmarks.landmarks) {
-                                const landmarks = faceWithLandmarks.landmarks;
-                                const nose = landmarks.getNose()[3]; // Point 30 (Nose tip)
-                                const leftEye = landmarks.getLeftEye()[0];  // Point 36 (outer corner)
-                                const rightEye = landmarks.getRightEye()[3]; // Point 45 (outer corner)
-
-                                const eyeMidX = (leftEye.x + rightEye.x) / 2;
-                                const eyeMidY = (leftEye.y + rightEye.y) / 2;
-                                const eyeDist = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y) || 1;
-                                const yaw = (nose.x - eyeMidX) / eyeDist;
-
-                                const leftEyeInner = landmarks.getLeftEye()[3];
-                                const rightEyeInner = landmarks.getRightEye()[0];
-                                const eyeSpan = Math.abs(rightEyeInner.x - leftEyeInner.x) || 1;
-                                const noseToLeft = Math.abs(nose.x - leftEyeInner.x);
-                                const noseToRight = Math.abs(rightEyeInner.x - nose.x);
-                                const gazeAsym = (noseToLeft - noseToRight) / eyeSpan;
-
-                                // Tính góc cúi/ngửa mặt (Pitch) theo tỷ lệ khoảng cách Mắt-Mũi so với Mũi-Miệng
-                                const mouth = landmarks.getMouth();
-                                const mouthMidY = (mouth && mouth.length >= 7) ? (mouth[0].y + mouth[6].y) / 2 : (nose.y + eyeDist * 0.7);
-                                const eyeToNose = Math.max(1, nose.y - eyeMidY);
-                                const noseToMouth = Math.max(1, mouthMidY - nose.y);
-                                const pitchRatio = eyeToNose / noseToMouth;
-
-                                let detectedTurn = null;
-                                let turnAction = '';
-
-                                if (yaw >= 0.13 || (yaw >= 0.09 && gazeAsym >= 0.16)) {
-                                    detectedTurn = 'left';
-                                    turnAction = 'quay trái';
-                                } else if (yaw <= -0.13 || (yaw <= -0.09 && gazeAsym <= -0.16)) {
-                                    detectedTurn = 'right';
-                                    turnAction = 'quay phải';
-                                } else if (pitchRatio > 1.85) {
-                                    detectedTurn = 'down';
-                                    turnAction = 'cúi đầu';
-                                } else if (pitchRatio < 0.45) {
-                                    detectedTurn = 'up';
-                                    turnAction = 'ngẩng đầu';
-                                }
-
-                                if (detectedTurn) {
-                                    if (sustainedDirectionStartTime === null) {
-                                        sustainedDirectionStartTime = now;
-                                        currentSustainedDirection = detectedTurn;
-                                    } else {
-                                        currentSustainedDirection = detectedTurn;
-                                    }
-                                    const elapsedSec = Math.floor((now - sustainedDirectionStartTime) / 1000);
-
-                                    if (elapsedSec >= SUSTAINED_TURN_MIN_SECONDS) {
-                                        // ĐÃ QUAY MẶT LIÊN TỤC >= 10 GIÂY: VI PHẠM -> VẼ BOX ĐỎ, CẢNH BÁO VÀ CHỤP ẢNH (KHÔNG HIỆN SỐ GIÂY)
-                                        if (ctx && overlayCanvas) {
-                                            drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, `Thí sinh ${turnAction} quá lâu`, '#f43f5e', '#ffffff');
-                                        }
-                                        if (wrapperEl) {
-                                            wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
-                                            wrapperEl.classList.remove('border-slate-800', 'border-amber-500');
-                                        }
-                                        if (alertBanner) alertBanner.classList.remove('hidden');
-                                        if (alertText) alertText.innerText = `Cảnh báo: Thí sinh ${turnAction} quá lâu!`;
-
-                                        if (now - lastHeadTurnLogTime >= ANOMALY_LOG_COOLDOWN_MS) {
-                                            lastHeadTurnLogTime = now;
-                                            const msg = `AI phát hiện thí sinh ${turnAction} quá lâu, không nhìn trực diện màn hình.`;
-                                            showToastAlert('Cảnh báo vi phạm', `Thí sinh ${turnAction} quá lâu! Vui lòng nhìn trực diện màn hình làm bài.`, 'danger');
-                                            triggerInstantAnomalySnapshot('looking_away', msg, 1, elapsedSec, `Thí sinh ${turnAction} quá lâu`);
-                                        }
-                                    } else if (elapsedSec >= 2) {
-                                        // ĐANG QUAY MẶT (từ 2s đến < 10s): VẼ BOX VÀNG CAM CẢNH BÁO (KHÔNG HIỆN SỐ GIÂY)
-                                        if (ctx && overlayCanvas) {
-                                            drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, `Đang ${turnAction}...`, '#f59e0b', '#ffffff');
-                                        }
-                                        if (wrapperEl) {
-                                            wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-slate-800');
-                                            wrapperEl.classList.add('border-amber-500');
-                                        }
-                                        if (alertBanner) alertBanner.classList.add('hidden');
-                                    } else {
-                                        // Dưới 2s: Vẽ box xanh hợp lệ
-                                        if (ctx && overlayCanvas) {
-                                            drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
-                                        }
-                                        if (wrapperEl) {
-                                            wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-amber-500');
-                                            wrapperEl.classList.add('border-slate-800');
-                                        }
-                                        if (alertBanner) alertBanner.classList.add('hidden');
-                                    }
-                                } else {
-                                    // THÍ SINH NHÌN TRỰC DIỆN MÀN HÌNH: RESET TIMER, VẼ BOX XANH, KHÔNG CHỤP ẢNH
-                                    sustainedDirectionStartTime = null;
-                                    currentSustainedDirection = null;
-
-                                    if (ctx && overlayCanvas) {
-                                        drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
-                                    }
-                                    if (wrapperEl) {
-                                        wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-amber-500');
-                                        wrapperEl.classList.add('border-slate-800');
-                                    }
-                                    if (alertBanner) alertBanner.classList.add('hidden');
-                                }
-                            } else {
-                                if (ctx && overlayCanvas) {
-                                    drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
-                                }
-                            }
-                        } catch (lmErr) {
-                            if (ctx && overlayCanvas) {
-                                drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
-                            }
-                        }
-                    } else {
-                        currentSustainedDirection = null;
-                        sustainedDirectionStartTime = null;
-                        if (ctx && overlayCanvas) {
-                            drawFaceBoundingBox(ctx, flippedX, b.y, b.width, b.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
-                        }
-                        if (wrapperEl) {
-                            wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-amber-500');
-                            wrapperEl.classList.add('border-slate-800');
-                        }
-                        if (alertBanner) alertBanner.classList.add('hidden');
-                    }
-                } catch (loopErr) {
-                    // Suppress any error to prevent disrupting student
                 }
-            }, 400);
+
+                currentDetections = applyNMS(rawCandidates);
+
+                // Check anomaly events for detected cheat objects (chỉ ghi log khi thí sinh đã bắt đầu làm bài)
+                if (isExamActive) {
+                    const now = Date.now();
+                    const hasPhone = currentDetections.find(d => d.label === 'cell phone');
+                    const hasBook = currentDetections.find(d => d.label === 'book');
+                    const hasLaptop = currentDetections.find(d => d.label === 'laptop');
+
+                    if (hasPhone && (now - lastPhoneLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
+                        lastPhoneLogTime = now;
+                        showToastAlert('Cảnh báo vi phạm', `Phát hiện điện thoại di động trước camera (${hasPhone.confidence}%)! Vui lòng cất điện thoại.`, 'danger');
+                        triggerInstantAnomalySnapshot('phone_detected', `Phát hiện điện thoại di động trong khung hình camera (Độ tin cậy: ${hasPhone.confidence}%)`, currentFaceCount, null, null, currentDetections);
+                    } else if (hasBook && (now - lastSuspiciousLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
+                        lastSuspiciousLogTime = now;
+                        showToastAlert('Cảnh báo tài liệu', `Phát hiện sách hoặc tài liệu trước camera!`, 'warning');
+                        triggerInstantAnomalySnapshot('suspicious_object', `Phát hiện sách hoặc tài liệu trong khung hình (Độ tin cậy: ${hasBook.confidence}%)`, currentFaceCount, null, null, currentDetections);
+                    } else if (hasLaptop && (now - lastSuspiciousLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
+                        lastSuspiciousLogTime = now;
+                        showToastAlert('Cảnh báo thiết bị', `Phát hiện thiết bị máy tính thứ hai trước camera!`, 'warning');
+                        triggerInstantAnomalySnapshot('suspicious_device', `Phát hiện thiết bị máy tính thứ hai trong khung hình (Độ tin cậy: ${hasLaptop.confidence}%)`, currentFaceCount, null, null, currentDetections);
+                    }
+                }
+
+            } catch (yoloErr) {
+                console.warn('[AI Proctor] YOLOv8 inference error:', yoloErr);
+            } finally {
+                isYoloInferencing = false;
+            }
+        }
+
+        // ====================================================
+        // MEDIAPIPE FACE MESH (LANDMARKS & HEAD POSE)
+        // ====================================================
+        function computeLandmarkBox(landmarks, canvasWidth, canvasHeight) {
+            let minX = 1.0, maxX = 0.0, minY = 1.0, maxY = 0.0;
+            for (let i = 0; i < landmarks.length; i++) {
+                const p = landmarks[i];
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            }
+            // Add slight padding around face
+            const padX = (maxX - minX) * 0.08;
+            const padY = (maxY - minY) * 0.08;
+            minX = Math.max(0, minX - padX);
+            maxX = Math.min(1.0, maxX + padX);
+            minY = Math.max(0, minY - padY);
+            maxY = Math.min(1.0, maxY + padY);
+
+            const pixelW = (maxX - minX) * canvasWidth;
+            const pixelH = (maxY - minY) * canvasHeight;
+            const pixelY = minY * canvasHeight;
+            const flippedX = canvasWidth - (maxX * canvasWidth);
+
+            return {
+                flippedX: flippedX,
+                y: pixelY,
+                width: pixelW,
+                height: pixelH
+            };
+        }
+
+        function drawYoloDetections(ctx, overlayCanvas) {
+            if (!currentDetections || currentDetections.length === 0) return;
+
+            for (const det of currentDetections) {
+                if (det.label === 'person') continue; // Handled by Face Mesh
+
+                const b = det.box;
+                const w = b[2] - b[0];
+                const h = b[3] - b[1];
+                const flippedX = overlayCanvas.width - (b[0] + w);
+
+                let color = '#f43f5e';
+                let label = `${det.label} (${det.confidence}%)`;
+
+                if (det.label === 'cell phone') {
+                    label = `Điện thoại (${det.confidence}%)`;
+                    color = '#f43f5e';
+                } else if (det.label === 'book') {
+                    label = `Tài liệu/Sách (${det.confidence}%)`;
+                    color = '#f59e0b';
+                } else if (det.label === 'laptop') {
+                    label = `Màn hình/Laptop (${det.confidence}%)`;
+                    color = '#f43f5e';
+                }
+
+                drawFaceBoundingBox(ctx, flippedX, b[1], w, h, label, color, '#ffffff');
+            }
+        }
+
+        function onFaceMeshResults(results) {
+            const video = document.getElementById('proctorVideo');
+            const overlayCanvas = document.getElementById('proctorOverlayCanvas');
+            if (!overlayCanvas || !video || video.videoWidth === 0) return;
+
+            if (overlayCanvas.width !== video.videoWidth || overlayCanvas.height !== video.videoHeight) {
+                overlayCanvas.width = video.videoWidth;
+                overlayCanvas.height = video.videoHeight;
+            }
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            const wrapperEl = document.getElementById('proctorVideoWrapper');
+            const countBadge = document.getElementById('proctorFaceCountBadge');
+            const countDot = document.getElementById('proctorFaceCountDot');
+            const countText = document.getElementById('proctorFaceCountText');
+            const alertBanner = document.getElementById('proctorAlertBanner');
+            const alertText = document.getElementById('proctorAlertText');
+            const now = Date.now();
+
+            const faceCount = results.multiFaceLandmarks ? results.multiFaceLandmarks.length : 0;
+            currentFaceCount = faceCount;
+
+            // 1. PHÁT HIỆN 0 KHUÔN MẶT (VẮNG MẶT >= 2.5s)
+            if (faceCount === 0) {
+                currentSustainedDirection = null;
+                sustainedDirectionStartTime = null;
+                multipleFacesStartTime = null;
+
+                if (countText) countText.innerText = '0 khuôn mặt';
+                if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping';
+                if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-rose-950/85 border border-rose-500/50 rounded-md text-[9px] font-bold text-rose-300 flex items-center gap-1.5 transition-all z-10';
+                if (wrapperEl) {
+                    wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
+                    wrapperEl.classList.remove('border-slate-800', 'border-amber-500');
+                }
+                if (alertBanner) alertBanner.classList.remove('hidden');
+                if (alertText) alertText.innerText = 'Cảnh báo: 0 khuôn mặt!';
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(244, 63, 94, 0.5)';
+                ctx.setLineDash([8, 6]);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(overlayCanvas.width * 0.18, overlayCanvas.height * 0.15, overlayCanvas.width * 0.64, overlayCanvas.height * 0.7);
+                ctx.restore();
+
+                if (absentStartTime === null) {
+                    absentStartTime = now;
+                } else {
+                    const absentMs = now - absentStartTime;
+                    if (absentMs >= ABSENT_THRESHOLD_MS && (now - lastAbsentLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
+                        lastAbsentLogTime = now;
+                        const absentSec = Math.max(2, Math.round(absentMs / 1000));
+                        const msg = `Camera không phát hiện thấy thí sinh trước màn hình (Vắng mặt ${absentSec} giây)`;
+                        if (isExamActive) {
+                            showToastAlert('Cảnh báo vắng mặt', 'Không phát hiện thấy khuôn mặt thí sinh trước camera! Vui lòng ngồi trước màn hình.', 'danger');
+                            triggerInstantAnomalySnapshot('face_absent', msg, 0, absentSec, null, currentDetections);
+                        }
+                    }
+                }
+                drawYoloDetections(ctx, overlayCanvas);
+                return;
+            } else {
+                absentStartTime = null;
+            }
+
+            // 2. PHÁT HIỆN TỪ 2 KHUÔN MẶT TRỞ LÊN (> 1 NGƯỜI >= 1.0s)
+            if (faceCount > 1) {
+                currentSustainedDirection = null;
+                sustainedDirectionStartTime = null;
+
+                if (countText) countText.innerText = `${faceCount} người`;
+                if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping';
+                if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-rose-950/85 border border-rose-500/50 rounded-md text-[9px] font-bold text-rose-300 flex items-center gap-1.5 transition-all z-10';
+                if (wrapperEl) {
+                    wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
+                    wrapperEl.classList.remove('border-slate-800', 'border-amber-500');
+                }
+                if (alertBanner) alertBanner.classList.remove('hidden');
+                if (alertText) alertText.innerText = `Cảnh báo: Phát hiện ${faceCount} người!`;
+
+                results.multiFaceLandmarks.forEach((lm, idx) => {
+                    const box = computeLandmarkBox(lm, overlayCanvas.width, overlayCanvas.height);
+                    drawFaceBoundingBox(ctx, box.flippedX, box.y, box.width, box.height, `Người #${idx + 1} (Vi phạm)`, '#f43f5e', '#ffffff');
+                });
+
+                if (multipleFacesStartTime === null) {
+                    multipleFacesStartTime = now;
+                } else {
+                    const multiMs = now - multipleFacesStartTime;
+                    if (multiMs >= MULTIPLE_THRESHOLD_MS && (now - lastMultipleLogTime >= ANOMALY_LOG_COOLDOWN_MS)) {
+                        lastMultipleLogTime = now;
+                        const msg = `Phát hiện ${faceCount} người cùng xuất hiện trước camera (Nghi vấn có người trợ giúp)`;
+                        if (isExamActive) {
+                            showToastAlert('Cảnh báo vi phạm', `Phát hiện ${faceCount} người trước camera! Vui lòng chỉ một mình làm bài thi.`, 'danger');
+                            triggerInstantAnomalySnapshot('multiple_persons', msg, faceCount, null, null, currentDetections);
+                        }
+                    }
+                }
+                drawYoloDetections(ctx, overlayCanvas);
+                return;
+            } else {
+                multipleFacesStartTime = null;
+            }
+
+            // 3. ĐÚNG 1 KHUÔN MẶT: THEO DÕI HƯỚNG QUAY TRÁI, PHẢI, LÊN, XUỐNG QUÁ 10S
+            if (countText) countText.innerText = '1 thí sinh';
+            if (countDot) countDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+            if (countBadge) countBadge.className = 'absolute top-1.5 right-1.5 px-2 py-0.5 bg-black/75 border border-white/10 rounded-md text-[9px] font-bold text-emerald-400 flex items-center gap-1.5 transition-all z-10';
+
+            const lm = results.multiFaceLandmarks[0];
+            const box = computeLandmarkBox(lm, overlayCanvas.width, overlayCanvas.height);
+
+            // 3D Head Pose calculation:
+            // Point 1: Nose tip, Point 33: Left eye outer, Point 263: Right eye outer
+            // Point 10: Forehead top, Point 152: Chin bottom
+            const eyeMidX = (lm[33].x + lm[263].x) / 2;
+            const eyeDist = Math.hypot(lm[263].x - lm[33].x, lm[263].y - lm[33].y) || 0.001;
+            const yaw = (lm[1].x - eyeMidX) / eyeDist;
+
+            const noseY = lm[1].y;
+            const foreheadY = lm[10].y;
+            const chinY = lm[152].y;
+            const upperDist = Math.max(0.001, Math.abs(noseY - foreheadY));
+            const lowerDist = Math.max(0.001, Math.abs(chinY - noseY));
+            const pitchRatio = upperDist / lowerDist;
+
+            let detectedTurn = null;
+            let turnAction = '';
+
+            if (yaw >= 0.14) {
+                detectedTurn = 'left';
+                turnAction = 'quay trái';
+            } else if (yaw <= -0.14) {
+                detectedTurn = 'right';
+                turnAction = 'quay phải';
+            } else if (pitchRatio > 1.65) {
+                detectedTurn = 'down';
+                turnAction = 'cúi đầu';
+            } else if (pitchRatio < 0.55) {
+                detectedTurn = 'up';
+                turnAction = 'ngẩng đầu';
+            }
+
+            if (detectedTurn) {
+                if (sustainedDirectionStartTime === null || currentSustainedDirection !== detectedTurn) {
+                    sustainedDirectionStartTime = now;
+                    currentSustainedDirection = detectedTurn;
+                }
+                const elapsedSec = Math.floor((now - sustainedDirectionStartTime) / 1000);
+
+                if (elapsedSec >= SUSTAINED_TURN_MIN_SECONDS) {
+                    // >= 10 GIÂY LIÊN TỤC: VI PHẠM (CHỤP ẢNH TỨC THÌ GỬI GIẢNG VIÊN)
+                    drawFaceBoundingBox(ctx, box.flippedX, box.y, box.width, box.height, `Thí sinh ${turnAction} quá 10s (Vi phạm)`, '#f43f5e', '#ffffff');
+                    if (wrapperEl) {
+                        wrapperEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
+                        wrapperEl.classList.remove('border-slate-800', 'border-amber-500');
+                    }
+                    if (alertBanner) alertBanner.classList.remove('hidden');
+                    if (alertText) alertText.innerText = `Cảnh báo: Thí sinh ${turnAction} quá 10s!`;
+
+                    if (now - lastHeadTurnLogTime >= ANOMALY_LOG_COOLDOWN_MS) {
+                        lastHeadTurnLogTime = now;
+                        const msg = `AI phát hiện thí sinh ${turnAction} liên tục quá 10s (${elapsedSec}s), không nhìn trực diện màn hình.`;
+                        if (isExamActive) {
+                            showToastAlert('Cảnh báo vi phạm', `Thí sinh ${turnAction} quá 10s! Vui lòng nhìn trực diện màn hình làm bài.`, 'danger');
+                            triggerInstantAnomalySnapshot('looking_away', msg, 1, elapsedSec, `Thí sinh ${turnAction} quá 10s`, currentDetections);
+                        }
+                    }
+                } else if (elapsedSec >= 2) {
+                    // TỪ 2s ĐẾN < 10s: VẼ BOX VÀNG CAM CẢNH BÁO
+                    drawFaceBoundingBox(ctx, box.flippedX, box.y, box.width, box.height, `Đang ${turnAction}...`, '#f59e0b', '#ffffff');
+                    if (wrapperEl) {
+                        wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-slate-800');
+                        wrapperEl.classList.add('border-amber-500');
+                    }
+                    if (alertBanner) alertBanner.classList.add('hidden');
+                } else {
+                    // DƯỚI 2s: XANH HỢP LỆ
+                    drawFaceBoundingBox(ctx, box.flippedX, box.y, box.width, box.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
+                    if (wrapperEl) {
+                        wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-amber-500');
+                        wrapperEl.classList.add('border-slate-800');
+                    }
+                    if (alertBanner) alertBanner.classList.add('hidden');
+                }
+            } else {
+                // NHÌN TRỰC DIỆN MÀN HÌNH: RESET TIMER, VẼ BOX XANH, KHÔNG PHẠT
+                sustainedDirectionStartTime = null;
+                currentSustainedDirection = null;
+
+                drawFaceBoundingBox(ctx, box.flippedX, box.y, box.width, box.height, 'Thí sinh (Hợp lệ)', '#10b981', '#ffffff');
+                if (wrapperEl) {
+                    wrapperEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50', 'border-amber-500');
+                    wrapperEl.classList.add('border-slate-800');
+                }
+                if (alertBanner) alertBanner.classList.add('hidden');
+            }
+
+            drawYoloDetections(ctx, overlayCanvas);
+        }
+
+        async function initMediaPipeFaceMesh() {
+            if (typeof FaceMesh === 'undefined') {
+                console.warn('[AI Proctor] MediaPipe FaceMesh chưa sẵn sàng, thử lại sau 500ms...');
+                setTimeout(initMediaPipeFaceMesh, 500);
+                return;
+            }
+
+            try {
+                faceMeshInstance = new FaceMesh({
+                    locateFile: (file) => {
+                        return `{{ asset('vendor/mediapipe') }}/${file}`;
+                    }
+                });
+
+                faceMeshInstance.setOptions({
+                    maxNumFaces: 4,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                faceMeshInstance.onResults(onFaceMeshResults);
+                await faceMeshInstance.initialize();
+                console.log('[AI Proctor] MediaPipe Face Mesh đã khởi tạo thành công!');
+            } catch (err) {
+                console.error('[AI Proctor] Lỗi khởi tạo MediaPipe Face Mesh:', err);
+            }
+        }
+
+        function scheduleNextVideoFrame() {
+            if (isRealtimeEngineRunning && !isSubmitting) {
+                requestAnimationFrame(processVideoFrame);
+            }
+        }
+
+        async function processVideoFrame() {
+            if (!isRealtimeEngineRunning || isSubmitting) return;
+
+            try {
+                const video = document.getElementById('proctorVideo');
+                if (video && !video.paused && !video.ended && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+                    // 1. Gửi frame tới MediaPipe Face Mesh
+                    if (faceMeshInstance && !isFaceMeshProcessing) {
+                        isFaceMeshProcessing = true;
+                        faceMeshInstance.send({ image: video })
+                            .catch(fmErr => {
+                                // Bỏ qua frame rơi
+                            })
+                            .finally(() => {
+                                isFaceMeshProcessing = false;
+                            });
+                    }
+
+                    // 2. Chạy YOLOv8 Client-side định kỳ mỗi 800ms
+                    const now = Date.now();
+                    if (yoloSession && !isYoloInferencing && (now - yoloLastInferenceTime >= YOLO_INTERVAL_MS)) {
+                        yoloLastInferenceTime = now;
+                        runYoloInference().catch(err => {
+                            isYoloInferencing = false;
+                        });
+                    }
+                }
+            } catch (loopErr) {
+                console.warn('[AI Proctor] Video frame loop error:', loopErr);
+            } finally {
+                scheduleNextVideoFrame();
+            }
+        }
+
+        async function initRealtimeProctorEngine() {
+            if (isRealtimeEngineRunning) return;
+            isRealtimeEngineRunning = true;
+            console.log('[AI Proctor] Khởi tạo Realtime Engine: MediaPipe Face Mesh & In-Browser YOLOv8...');
+
+            // Bắt đầu loop ngay để hiển thị camera và giao diện
+            scheduleNextVideoFrame();
+
+            // Khởi tạo song song ngầm cả Face Mesh và YOLOv8
+            initMediaPipeFaceMesh();
+            initClientYolo();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -2062,7 +2317,7 @@
             updateNoteCounts();
             const status = document.getElementById('noteSaveStatus');
             if (status) {
-                status.innerText = '✓ Đã lưu nháp';
+                status.innerText = 'Đã lưu nháp';
                 status.className = 'text-[10px] text-emerald-600 font-bold block';
             }
         }
@@ -2096,6 +2351,10 @@
             if (!noteEl || !noteEl.value.trim()) {
                 showToastAlert('Thông báo', 'Bản nháp đang trống, vui lòng nhập nội dung nháp trước khi sao chép.', 'info');
                 return;
+            }
+            if (window.__internalClipboardSet) {
+                window.__internalClipboardSet.add(noteEl.value.trim());
+                window.__internalClipboardText = noteEl.value;
             }
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(noteEl.value).then(() => {
@@ -2237,7 +2496,9 @@
             <!-- Main Keypad (Digits & Operations) -->
             <div class="grid grid-cols-4 gap-1.5 pt-1 text-sm font-bold">
                 <button type="button" onclick="calcClearAll()" class="py-2.5 rounded-xl bg-rose-950/70 hover:bg-rose-900 text-rose-300 transition-colors">AC</button>
-                <button type="button" onclick="calcBackspace()" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">⌫</button>
+                <button type="button" onclick="calcBackspace()" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center justify-center" title="Xóa lùi">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"></path></svg>
+                </button>
                 <button type="button" onclick="calcInputOperator('%')" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">%</button>
                 <button type="button" onclick="calcInputOperator('÷')" class="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">÷</button>
 
@@ -2273,7 +2534,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-xs text-amber-950">Ghi chú & Nháp thi</h4>
-                    <span id="noteSaveStatus" class="text-[10px] text-emerald-600 font-bold block">✓ Đã tự động lưu</span>
+                    <span id="noteSaveStatus" class="text-[10px] text-emerald-600 font-bold block">Đã tự động lưu</span>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -2315,7 +2576,7 @@
                 <span>•</span>
                 <span>Ký tự: <strong id="noteCharCount" class="text-slate-800 font-bold">0</strong></span>
             </div>
-            <span class="text-[10px] text-emerald-600 font-bold">✓ Được phép sao chép nháp & dán vào bài</span>
+            <span class="text-[10px] text-emerald-600 font-bold">Được phép sao chép nháp & dán vào bài</span>
         </div>
     </div>
 
